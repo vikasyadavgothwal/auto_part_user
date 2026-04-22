@@ -153,7 +153,8 @@ export default function MyVehiclesPage() {
             >
               <CardContent className="p-6">
                 <div className="mb-2 text-sm text-brand-muted flex gap-2">
-                   {item.id ===1 && <Truck className="h-5 w-5 text-primary" />} {item.title}
+                  {item.id === 1 && <Truck className="h-5 w-5 text-primary" />}{" "}
+                  {item.title}
                 </div>
                 <div className="text-3xl font-bold text-foreground">
                   {item.value}
