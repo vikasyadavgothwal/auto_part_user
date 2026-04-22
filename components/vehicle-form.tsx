@@ -1,7 +1,5 @@
 "use client"
-
 import { useEffect, useState } from "react"
-
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -12,13 +10,11 @@ import {
   type VehicleFormValues,
   type VehicleStatus,
 } from "@/lib/vehicles"
-
 const vehicleStatusOptions: VehicleStatus[] = [
   "Active",
   "In Service",
   "Inactive",
 ]
-
 type VehicleFormProps = {
   initialValues?: VehicleFormValues
   submitLabel: string
