@@ -23,7 +23,7 @@ export function DashboardHeader() {
             <Input
               type="text"
               placeholder="Search..."
-              className="h-10 w-full rounded-lg border border-border bg-brand-surface pl-10 pr-4 text-foreground placeholder:text-brand-muted focus-visible:border-primary focus-visible:ring-0"
+              className="h-10 w-full rounded-sm border border-border bg-brand-surface pl-10 pr-4 text-foreground placeholder:text-brand-muted focus-visible:border-primary focus-visible:ring-0"
             />
           </div>
         </div>
@@ -44,7 +44,7 @@ export function DashboardHeader() {
           <Button
             type="button"
             variant="ghost"
-            className="flex items-center gap-2 rounded-lg bg-brand-panel-strong px-3 py-2 hover:bg-brand-panel-strong"
+            className="flex items-center gap-2 rounded-sm bg-brand-panel-strong px-3 py-2 hover:bg-brand-panel-strong"
           >
             <User className="h-5 w-5 text-brand-muted" />
             <span className="hidden text-sm font-medium text-foreground sm:inline">

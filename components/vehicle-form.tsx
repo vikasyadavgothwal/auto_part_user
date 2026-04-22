@@ -134,7 +134,7 @@ export function VehicleForm({
             onChange={(event) =>
               updateValue("status", event.target.value as VehicleStatus)
             }
-            className="h-10 w-full rounded-lg border border-border bg-brand-surface px-3 text-sm text-foreground outline-none transition-colors focus-visible:border-primary"
+            className="h-10 w-full rounded-sm border border-border bg-brand-surface px-3 text-sm text-foreground outline-none transition-colors focus-visible:border-primary"
           >
             {vehicleStatusOptions.map((status) => (
               <option key={status} value={status}>
@@ -144,7 +144,7 @@ export function VehicleForm({
           </select>
         </div>
 
-        <label className="flex min-h-10 items-center gap-3 rounded-lg border border-border bg-brand-surface px-4">
+        <label className="flex min-h-10 items-center gap-3 rounded-sm border border-border bg-brand-surface px-4">
           <Checkbox
             checked={values.primary}
             onCheckedChange={(checked) =>

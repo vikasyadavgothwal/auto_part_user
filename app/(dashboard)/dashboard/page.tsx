@@ -126,7 +126,7 @@ export default function BuyerOverviewPage() {
           return (
             <Card
               key={item.title}
-              className="rounded-lg border border-border bg-brand-panel transition-all hover:border-primary"
+              className="rounded-sm border border-border bg-brand-panel transition-all hover:border-primary"
             >
               <CardContent className="p-6">
                 <div className="mb-4 flex items-start justify-between">
@@ -134,7 +134,7 @@ export default function BuyerOverviewPage() {
                     {item.title}
                   </div>
 
-                  <div className="rounded-lg border border-primary/20 bg-primary/10 p-2">
+                  <div className="rounded-sm border border-primary/20 bg-primary/10 p-2">
                     <Icon className="h-5 w-5 text-primary" />
                   </div>
                 </div>
@@ -154,7 +154,7 @@ export default function BuyerOverviewPage() {
         })}
       </div>
 
-      <Card className="rounded-lg border border-border bg-brand-panel">
+      <Card className="rounded-sm border border-border bg-brand-panel">
         <CardContent className="p-6">
           <div className="mb-6 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <div>
@@ -173,7 +173,7 @@ export default function BuyerOverviewPage() {
           </div>
 
           <div className="mb-6 flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-center sm:gap-6">
-            <div className="w-fit rounded-lg border border-primary/20 bg-primary/10 p-4">
+            <div className="w-fit rounded-sm border border-primary/20 bg-primary/10 p-4">
               <Truck className="h-8 w-8 text-primary" />
             </div>
 
@@ -190,7 +190,7 @@ export default function BuyerOverviewPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Button
               asChild
-              className="h-auto rounded-lg bg-primary px-6 py-3 text-foreground hover:bg-brand-primary-hover"
+              className="h-auto rounded-sm bg-primary px-6 py-3 text-foreground hover:bg-brand-primary-hover"
             >
               <Link
                 href="/search"
@@ -204,7 +204,7 @@ export default function BuyerOverviewPage() {
             <Button
               asChild
               variant="outline"
-              className="h-auto rounded-lg border-border bg-brand-panel-strong px-6 py-3 text-foreground hover:border-primary hover:bg-brand-panel-strong"
+              className="h-auto rounded-sm border-border bg-brand-panel-strong px-6 py-3 text-foreground hover:border-primary hover:bg-brand-panel-strong"
             >
               <Link
                 href="/services"
@@ -229,7 +229,7 @@ export default function BuyerOverviewPage() {
           </Link>
         </div>
 
-        <Card className="overflow-hidden rounded-lg border border-border bg-brand-panel">
+        <Card className="overflow-hidden rounded-sm border border-border bg-brand-panel">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -304,7 +304,7 @@ export default function BuyerOverviewPage() {
           </Link>
         </div>
 
-        <Card className="overflow-hidden rounded-lg border border-border bg-brand-panel">
+        <Card className="overflow-hidden rounded-sm border border-border bg-brand-panel">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -375,10 +375,10 @@ export default function BuyerOverviewPage() {
           {recommendedProducts.map((product) => (
             <Card
               key={product.id}
-              className="cursor-pointer rounded-lg border border-border bg-brand-panel transition-all hover:border-primary"
+              className="cursor-pointer rounded-sm border border-border bg-brand-panel transition-all hover:border-primary"
             >
               <CardContent className="p-6">
-                <div className="mb-4 aspect-square rounded-lg bg-brand-panel-strong" />
+                <div className="mb-4 aspect-square rounded-sm bg-brand-panel-strong" />
 
                 <h3 className="mb-2 font-semibold text-foreground">
                   {product.title}

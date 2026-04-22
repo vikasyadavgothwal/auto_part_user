@@ -141,7 +141,7 @@ export default function MyVehiclesPage() {
 
           <Button
             asChild
-            className="h-auto w-full gap-2 rounded-lg bg-primary px-6 py-3 text-primary-foreground hover:bg-brand-primary-hover sm:w-auto"
+            className="h-auto w-full gap-2 rounded-sm bg-primary px-6 py-3 text-primary-foreground hover:bg-brand-primary-hover sm:w-auto"
           >
             <Link href={appRoutes.createVehicle}>
               <Plus className="h-5 w-5" />
@@ -154,7 +154,7 @@ export default function MyVehiclesPage() {
           {stats.map((item) => (
             <Card
               key={item.title}
-              className="rounded-lg border border-border bg-brand-panel"
+              className="rounded-sm border border-border bg-brand-panel"
             >
               <CardContent className="p-6">
                 <div className="mb-2 text-sm text-brand-muted">{item.title}</div>
@@ -169,7 +169,7 @@ export default function MyVehiclesPage() {
           ))}
         </div>
 
-        <Card className="overflow-hidden rounded-lg border border-border bg-brand-panel">
+        <Card className="overflow-hidden rounded-sm border border-border bg-brand-panel">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -201,7 +201,7 @@ export default function MyVehiclesPage() {
                     >
                       <TableCell className="px-6 py-4 text-sm text-brand-muted">
                         <div className="flex items-center gap-3">
-                          <div className="rounded-lg border border-primary/20 bg-primary/10 p-2">
+                          <div className="rounded-sm border border-primary/20 bg-primary/10 p-2">
                             <Truck className="h-5 w-5 text-primary" />
                           </div>
 
@@ -270,7 +270,7 @@ export default function MyVehiclesPage() {
           </div>
         </Card>
 
-        <Card className="rounded-lg border border-border bg-brand-panel">
+        <Card className="rounded-sm border border-border bg-brand-panel">
           <CardContent className="p-6">
             <h3 className="mb-2 font-semibold text-foreground">
               Why add vehicles?

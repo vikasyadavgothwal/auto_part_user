@@ -84,7 +84,7 @@ export default function NotFoundPage() {
                   <Link
                     key={item.title}
                     href={item.href}
-                    className="group rounded-lg border border-[#2A2A2A] bg-[#0A0A0A] p-4 transition-all hover:border-[#DC2626]"
+                    className="group rounded-sm border border-[#2A2A2A] bg-[#0A0A0A] p-4 transition-all hover:border-[#DC2626]"
                   >
                     <h4 className="mb-1 font-semibold text-white transition-colors group-hover:text-[#DC2626]">
                       {item.title}

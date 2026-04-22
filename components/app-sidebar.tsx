@@ -19,6 +19,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { appRoutes, stripBasePath } from "@/lib/routes"
 
@@ -33,14 +34,25 @@ const items = [
 
 export function AppSidebar() {
   const currentPath = stripBasePath(usePathname())
+  const { isMobile, setOpenMobile } = useSidebar()
+
+  const closeMobileSidebar = () => {
+    if (isMobile) {
+      setOpenMobile(false)
+    }
+  }
 
   return (
     <Sidebar className="border-sidebar-border bg-brand-panel text-foreground">
       <SidebarHeader className="border-b border-border px-6 py-6">
-        <Link href={appRoutes.overview} className="block">
+        <Link
+          href={appRoutes.overview}
+          className="block"
+          onClick={closeMobileSidebar}
+        >
           <h2 className="text-xl font-bold">AutoPartsPro</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Fleet Manager
+            Buyer 
           </p>
         </Link>
       </SidebarHeader>
@@ -62,13 +74,17 @@ export function AppSidebar() {
                 <SidebarMenuButton
                   asChild
                   isActive={isActive}
-                  className={`h-auto rounded-lg px-4 py-3 transition-all ${
+                  className={`h-auto rounded-sm px-4 py-3 transition-all ${
                     isActive
                       ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted"
                   }`}
                 >
-                  <Link href={item.url} className="flex items-center gap-3">
+                  <Link
+                    href={item.url}
+                    className="flex items-center gap-3"
+                    onClick={closeMobileSidebar}
+                  >
                     <Icon className="h-5 w-5" />
                     <span className="font-medium">{item.title}</span>
                   </Link>
@@ -88,7 +104,7 @@ export function AppSidebar() {
                 currentPath === appRoutes.settings ||
                 currentPath.startsWith(`${appRoutes.settings}/`)
               }
-              className={`h-auto rounded-lg px-4 py-3 transition-all ${
+              className={`h-auto rounded-sm px-4 py-3 transition-all ${
                 currentPath === appRoutes.settings ||
                 currentPath.startsWith(`${appRoutes.settings}/`)
                   ? "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
@@ -98,6 +114,7 @@ export function AppSidebar() {
               <Link
                 href={appRoutes.settings}
                 className="flex items-center gap-3"
+                onClick={closeMobileSidebar}
               >
                 <Settings className="h-5 w-5" />
                 <span className="font-medium">Settings</span>

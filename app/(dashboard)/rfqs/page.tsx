@@ -128,7 +128,7 @@ export default function MyRfqsPage() {
 
         <Button
           asChild
-          className="h-auto w-full gap-2 rounded-lg bg-primary px-6 py-3 text-foreground hover:bg-brand-primary-hover sm:w-auto"
+          className="h-auto w-full gap-2 rounded-sm bg-primary px-6 py-3 text-foreground hover:bg-brand-primary-hover sm:w-auto"
         >
           <Link href="/rfq">
             <Plus className="h-5 w-5" />
@@ -141,7 +141,7 @@ export default function MyRfqsPage() {
         {stats.map((item) => (
           <Card
             key={item.title}
-            className="rounded-lg border border-border bg-brand-panel"
+            className="rounded-sm border border-border bg-brand-panel"
           >
             <CardContent className="p-6">
               <div className="mb-2 text-sm text-brand-muted">{item.title}</div>
@@ -153,7 +153,7 @@ export default function MyRfqsPage() {
         ))}
       </div>
 
-      <Card className="overflow-hidden rounded-lg border border-border bg-brand-panel">
+      <Card className="overflow-hidden rounded-sm border border-border bg-brand-panel">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -236,7 +236,7 @@ export default function MyRfqsPage() {
 
                   <TableCell className="px-6 py-4 text-sm text-brand-muted">
                     <Button
-                      className={`rounded-lg px-4 py-1.5 text-sm transition-all ${rfq.buttonClass}`}
+                      className={`rounded-sm px-4 py-1.5 text-sm transition-all ${rfq.buttonClass}`}
                     >
                       {rfq.buttonText}
                     </Button>
@@ -248,7 +248,7 @@ export default function MyRfqsPage() {
         </div>
       </Card>
 
-      <Card className="rounded-lg border border-border bg-brand-panel">
+      <Card className="rounded-sm border border-border bg-brand-panel">
         <CardContent className="p-6">
           <h3 className="mb-2 font-semibold text-foreground">How RFQs Work</h3>
 

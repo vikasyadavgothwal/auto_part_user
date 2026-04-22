@@ -46,14 +46,14 @@ export default function CreateVehiclePage() {
           type="button"
           variant="outline"
           onClick={() => router.push(appRoutes.vehicles)}
-          className="h-auto w-full gap-2 rounded-lg border-border bg-brand-surface px-5 py-3 text-foreground hover:bg-brand-panel-strong sm:w-auto"
+          className="h-auto w-full gap-2 rounded-sm border-border bg-brand-surface px-5 py-3 text-foreground hover:bg-brand-panel-strong sm:w-auto"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Vehicles
         </Button>
       </div>
 
-      <Card className="rounded-lg border border-border bg-brand-panel shadow-none">
+      <Card className="rounded-sm border border-border bg-brand-panel shadow-none">
         <CardContent className="p-6">
           <VehicleForm
             submitLabel="Create Vehicle"

@@ -13,7 +13,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <Card className="rounded-lg border border-border bg-brand-panel shadow-none">
+      <Card className="rounded-sm border border-border bg-brand-panel shadow-none">
         <CardHeader>
           <CardTitle className="text-foreground">Organization Profile</CardTitle>
         </CardHeader>

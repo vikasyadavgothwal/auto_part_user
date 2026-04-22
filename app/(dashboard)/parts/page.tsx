@@ -78,7 +78,7 @@ export default function SavedPartsPage() {
 
         <Button
           asChild
-          className="h-auto w-full rounded-lg bg-primary px-6 py-3 text-foreground hover:bg-brand-primary-hover sm:w-auto"
+          className="h-auto w-full rounded-sm bg-primary px-6 py-3 text-foreground hover:bg-brand-primary-hover sm:w-auto"
         >
           <Link href="/search">Browse Parts</Link>
         </Button>
@@ -91,7 +91,7 @@ export default function SavedPartsPage() {
           return (
             <Card
               key={item.title}
-              className="rounded-lg border border-border bg-brand-panel"
+              className="rounded-sm border border-border bg-brand-panel"
             >
               <CardContent className="p-6">
                 {item.showIcon && Icon ? (
@@ -114,14 +114,14 @@ export default function SavedPartsPage() {
         {savedParts.map((part) => (
           <Card
             key={`${part.brand}-${part.title}`}
-            className="group overflow-hidden rounded-lg border border-border bg-brand-panel transition-all hover:border-primary"
+            className="group overflow-hidden rounded-sm border border-border bg-brand-panel transition-all hover:border-primary"
           >
             <div className="relative flex aspect-square items-center justify-center bg-brand-panel-strong">
               <Package className="h-16 w-16 text-brand-muted" />
 
               <button
                 type="button"
-                className="absolute right-3 top-3 rounded-lg bg-background/50 p-2 backdrop-blur-sm transition-all hover:bg-primary"
+                className="absolute right-3 top-3 rounded-sm bg-background/50 p-2 backdrop-blur-sm transition-all hover:bg-primary"
               >
                 <Trash2 className="h-4 w-4 text-foreground" />
               </button>
@@ -148,13 +148,13 @@ export default function SavedPartsPage() {
                 </div>
 
                 {part.inStock ? (
-                  <Button className="rounded-lg bg-primary px-4 py-2 text-sm text-foreground hover:bg-brand-primary-hover">
+                  <Button className="rounded-sm bg-primary px-4 py-2 text-sm text-foreground hover:bg-brand-primary-hover">
                     {part.actionLabel}
                   </Button>
                 ) : (
                   <Button
                     disabled
-                    className="cursor-not-allowed rounded-lg bg-brand-panel-strong px-4 py-2 text-sm text-brand-muted hover:bg-brand-panel-strong"
+                    className="cursor-not-allowed rounded-sm bg-brand-panel-strong px-4 py-2 text-sm text-brand-muted hover:bg-brand-panel-strong"
                   >
                     {part.actionLabel}
                   </Button>

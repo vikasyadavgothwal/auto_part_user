@@ -102,7 +102,7 @@ export default function MyOrdersPage() {
 
         <Button
           variant="outline"
-          className="h-auto w-full gap-2 rounded-lg border-border bg-brand-panel-strong px-6 py-3 text-foreground hover:border-primary hover:bg-brand-panel-strong sm:w-auto"
+          className="h-auto w-full gap-2 rounded-sm border-border bg-brand-panel-strong px-6 py-3 text-foreground hover:border-primary hover:bg-brand-panel-strong sm:w-auto"
         >
           <Download className="h-5 w-5" />
           Export Orders
@@ -113,7 +113,7 @@ export default function MyOrdersPage() {
         {stats.map((item) => (
           <Card
             key={item.title}
-            className="rounded-lg border border-border bg-brand-panel"
+            className="rounded-sm border border-border bg-brand-panel"
           >
             <CardContent className="p-6">
               <div className="mb-2 text-sm text-brand-muted">{item.title}</div>
@@ -138,8 +138,8 @@ export default function MyOrdersPage() {
               variant="outline"
               className={
                 filter.active
-                  ? "rounded-lg border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
-                  : "rounded-lg border-border bg-brand-panel text-brand-muted hover:border-primary hover:bg-brand-panel hover:text-brand-muted"
+                  ? "rounded-sm border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+                  : "rounded-sm border-border bg-brand-panel text-brand-muted hover:border-primary hover:bg-brand-panel hover:text-brand-muted"
               }
             >
               {filter.label}
@@ -148,7 +148,7 @@ export default function MyOrdersPage() {
         </div>
       </div>
 
-      <Card className="overflow-hidden rounded-lg border border-border bg-brand-panel">
+      <Card className="overflow-hidden rounded-sm border border-border bg-brand-panel">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -223,7 +223,7 @@ export default function MyOrdersPage() {
                   </TableCell>
 
                   <TableCell className="px-6 py-4 text-sm text-brand-muted">
-                    <Button className="rounded-lg bg-brand-panel-strong px-4 py-1.5 text-sm text-foreground hover:bg-primary">
+                    <Button className="rounded-sm bg-brand-panel-strong px-4 py-1.5 text-sm text-foreground hover:bg-primary">
                       View
                     </Button>
                   </TableCell>

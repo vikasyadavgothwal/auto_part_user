@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
-
+import path from "node:path";
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "/user_dashboard";
 const legacyBasePaths = ["/dashboard", "/dahboard"].filter(
-  (path) => path !== basePath
+  (path) => path !== basePath,
 );
 const externalRedirect = {
   basePath: false as const,
@@ -11,6 +11,10 @@ const externalRedirect = {
 
 const nextConfig: NextConfig = {
   basePath,
+  reactStrictMode: true,
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
   async redirects() {
     return [
       {

@@ -94,7 +94,7 @@ export default function MyBookingsPage() {
 
         <Button
           asChild
-          className="h-auto w-full gap-2 rounded-lg bg-primary px-6 py-3 text-foreground hover:bg-brand-primary-hover sm:w-auto"
+          className="h-auto w-full gap-2 rounded-sm bg-primary px-6 py-3 text-foreground hover:bg-brand-primary-hover sm:w-auto"
         >
           <Link href="/services">
             <Plus className="h-5 w-5" />
@@ -110,7 +110,7 @@ export default function MyBookingsPage() {
           return (
             <Card
               key={item.title}
-              className="rounded-lg border border-border bg-brand-panel"
+              className="rounded-sm border border-border bg-brand-panel"
             >
               <CardContent className="p-6">
                 {item.showIcon ? (
@@ -129,7 +129,7 @@ export default function MyBookingsPage() {
         })}
       </div>
 
-      <Card className="overflow-hidden rounded-lg border border-border bg-brand-panel">
+      <Card className="overflow-hidden rounded-sm border border-border bg-brand-panel">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -214,7 +214,7 @@ export default function MyBookingsPage() {
       </Card>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <Card className="rounded-lg border border-border bg-brand-panel">
+        <Card className="rounded-sm border border-border bg-brand-panel">
           <CardContent className="p-6">
             <h3 className="mb-4 font-semibold text-foreground">Next Appointment</h3>
 
@@ -235,13 +235,13 @@ export default function MyBookingsPage() {
               </div>
             </div>
 
-            <Button className="mt-4 w-full rounded-lg bg-brand-panel-strong text-foreground hover:bg-primary">
+            <Button className="mt-4 w-full rounded-sm bg-brand-panel-strong text-foreground hover:bg-primary">
               View Details
             </Button>
           </CardContent>
         </Card>
 
-        <Card className="rounded-lg border border-border bg-brand-panel">
+        <Card className="rounded-sm border border-border bg-brand-panel">
           <CardContent className="p-6">
             <h3 className="mb-4 font-semibold text-foreground">Popular Services</h3>
 
@@ -250,7 +250,7 @@ export default function MyBookingsPage() {
                 <Link
                   key={service}
                   href="/services"
-                  className="flex items-center justify-between rounded-lg bg-brand-surface p-3 transition-all hover:border hover:border-primary"
+                  className="flex items-center justify-between rounded-sm bg-brand-surface p-3 transition-all hover:border hover:border-primary"
                 >
                   <span className="text-sm text-foreground">{service}</span>
                   <span className="text-xs text-primary">Book Now →</span>
