@@ -1,20 +1,21 @@
-"use client"
+/* eslint-disable react-hooks/set-state-in-effect */
+"use client";
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { Pen, Plus, Trash2, Truck } from "lucide-react"
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Pen, Plus, Trash2, Truck } from "lucide-react";
 
-import { VehicleForm } from "@/components/vehicle-form"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { VehicleForm } from "@/components/vehicle-form";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -22,8 +23,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { appRoutes } from "@/lib/routes"
+} from "@/components/ui/table";
+import { appRoutes } from "@/lib/routes";
 import {
   formatVehicleMileage,
   getDefaultVehicles,
@@ -35,7 +36,7 @@ import {
   type VehicleStatus,
   upsertVehicle,
   writeVehiclesToStorage,
-} from "@/lib/vehicles"
+} from "@/lib/vehicles";
 
 const vehicleStatusClasses: Record<VehicleStatus, string> = {
   Active:
@@ -44,85 +45,79 @@ const vehicleStatusClasses: Record<VehicleStatus, string> = {
     "rounded-full border border-brand-warning/20 bg-brand-warning/10 px-3 py-1 text-xs font-medium text-brand-warning hover:bg-brand-warning/10",
   Inactive:
     "rounded-full border border-border bg-brand-panel-strong px-3 py-1 text-xs font-medium text-brand-muted hover:bg-brand-panel-strong",
-}
+};
 
 export default function MyVehiclesPage() {
-  const [vehicles, setVehicles] = useState<VehicleRecord[]>(getDefaultVehicles)
-  const [editVehicle, setEditVehicle] = useState<VehicleRecord | null>(null)
+  const [vehicles, setVehicles] = useState<VehicleRecord[]>(getDefaultVehicles);
+  const [editVehicle, setEditVehicle] = useState<VehicleRecord | null>(null);
 
   useEffect(() => {
-    setVehicles(readVehiclesFromStorage())
-  }, [])
+    setVehicles(readVehiclesFromStorage());
+  }, []);
 
   function persistVehicles(nextVehicles: VehicleRecord[]) {
-    setVehicles(nextVehicles)
-    writeVehiclesToStorage(nextVehicles)
+    setVehicles(nextVehicles);
+    writeVehiclesToStorage(nextVehicles);
   }
 
-  const totalVehicles = vehicles.length
-  const primaryVehicle = vehicles.find((vehicle) => vehicle.primary) ?? null
+  const totalVehicles = vehicles.length;
   const activeVehicles = vehicles.filter(
-    (vehicle) => vehicle.status === "Active"
-  ).length
+    (vehicle) => vehicle.status === "Active",
+  ).length;
 
   const stats = [
     {
-      title: "Total Vehicles",
+      id: 1,
+      title: `Total Vehicles`,
       value: String(totalVehicles),
-      subtitle:
-        totalVehicles === 1 ? "Vehicle in workspace" : "Vehicles in workspace",
     },
     {
-      title: "Primary Vehicle",
-      value: primaryVehicle ? primaryVehicle.year : "Not set",
-      subtitle: primaryVehicle
-        ? `${primaryVehicle.make} ${primaryVehicle.model}`
-        : "Choose a default vehicle",
+      id: 2,
+      title: "Recent Orders",
+      value: 12,
+      subtitle: "Across all veicle",
     },
     {
-      title: "Active Vehicles",
+      id: 3,
+      title: "Active RFQs",
       value: String(activeVehicles),
-      subtitle: `${totalVehicles - activeVehicles} inactive or in service`,
+      subtitle: "Find your veicles",
     },
-  ]
+  ];
 
   function handleEditVehicle(vehicle: VehicleRecord) {
-    setEditVehicle(vehicle)
+    setEditVehicle(vehicle);
   }
 
   function handleEditSubmit(values: ReturnType<typeof toVehicleFormValues>) {
     if (!editVehicle) {
-      return
+      return;
     }
-
     persistVehicles(
       upsertVehicle(vehicles, {
         id: editVehicle.id,
         ...values,
-      })
-    )
-    setEditVehicle(null)
+      }),
+    );
+    setEditVehicle(null);
   }
 
   function handleDeleteVehicle(vehicleId: string) {
-    const vehicleToDelete = vehicles.find((vehicle) => vehicle.id === vehicleId)
-
+    const vehicleToDelete = vehicles.find(
+      (vehicle) => vehicle.id === vehicleId,
+    );
     if (!vehicleToDelete) {
-      return
+      return;
     }
-
     const confirmed = window.confirm(
-      `Remove ${getVehicleDisplayName(vehicleToDelete)} from your vehicles?`
-    )
-
+      `Remove ${getVehicleDisplayName(vehicleToDelete)} from your vehicles?`,
+    );
     if (!confirmed) {
-      return
+      return;
     }
-
-    persistVehicles(removeVehicle(vehicles, vehicleId))
-
+    persistVehicles(removeVehicle(vehicles, vehicleId));
     if (editVehicle?.id === vehicleId) {
-      setEditVehicle(null)
+      setEditVehicle(null);
     }
   }
 
@@ -153,16 +148,18 @@ export default function MyVehiclesPage() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {stats.map((item) => (
             <Card
-              key={item.title}
+              key={item.id}
               className="rounded-sm border border-border bg-brand-panel"
             >
               <CardContent className="p-6">
-                <div className="mb-2 text-sm text-brand-muted">{item.title}</div>
+                <div className="mb-2 text-sm text-brand-muted flex gap-2">
+                   {item.id ===1 && <Truck className="h-5 w-5 text-primary" />} {item.title}
+                </div>
                 <div className="text-3xl font-bold text-foreground">
                   {item.value}
                 </div>
                 <div className="mt-1 text-sm text-brand-muted">
-                  {item.subtitle}
+                  {item.subtitle ? item.title : ""}
                 </div>
               </CardContent>
             </Card>
@@ -261,7 +258,8 @@ export default function MyVehiclesPage() {
                       colSpan={5}
                       className="px-6 py-12 text-center text-sm text-brand-muted"
                     >
-                      No vehicles added yet. Create one to start tracking fitment.
+                      No vehicles added yet. Create one to start tracking
+                      fitment.
                     </TableCell>
                   </TableRow>
                 )}
@@ -302,7 +300,7 @@ export default function MyVehiclesPage() {
         open={Boolean(editVehicle)}
         onOpenChange={(open) => {
           if (!open) {
-            setEditVehicle(null)
+            setEditVehicle(null);
           }
         }}
       >
@@ -325,5 +323,5 @@ export default function MyVehiclesPage() {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
