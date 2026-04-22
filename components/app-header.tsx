@@ -8,8 +8,14 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import { NotificationPopup } from "@/components/notification-popup"
 
 export function DashboardHeader() {
   return (
@@ -29,17 +35,30 @@ export function DashboardHeader() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="relative">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="relative text-brand-muted hover:bg-transparent hover:text-foreground"
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Open notifications"
+                className="relative text-brand-muted hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground"
+              >
+                <Bell className="h-6 w-6" />
+                <span
+                  aria-hidden="true"
+                  className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full border border-brand-panel bg-primary"
+                />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              sideOffset={12}
+              className="w-96 max-w-[calc(100vw-2rem)] overflow-hidden rounded-sm border border-border bg-brand-panel p-0 shadow-2xl shadow-black/40"
             >
-              <Bell className="h-6 w-6" />
-              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
-            </Button>
-          </div>
+              <NotificationPopup />
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <Button
             type="button"
