@@ -41,7 +41,7 @@ export const recentOrders = [
     statusClass:
       "bg-brand-info/10 text-brand-info border-brand-info/20 hover:bg-brand-info/10",
     date: "2024-01-15",
-    total: "$89.99",
+    total: "AED 89.99",
   },
   {
     id: "ORD-002",
@@ -51,7 +51,7 @@ export const recentOrders = [
     statusClass:
       "bg-brand-success/10 text-brand-success border-brand-success/20 hover:bg-brand-success/10",
     date: "2024-01-10",
-    total: "$24.99",
+    total: "AED 24.99",
   },
   {
     id: "ORD-003",
@@ -61,7 +61,7 @@ export const recentOrders = [
     statusClass:
       "bg-brand-warning/10 text-brand-warning border-brand-warning/20 hover:bg-brand-warning/10",
     date: "2024-01-18",
-    total: "$19.99",
+    total: "AED 19.99",
   },
 ]
 
@@ -88,5 +88,5 @@ export const recommendedProducts = Array.from({ length: 3 }).map((_, i) => ({
   id: i + 1,
   title: "Premium Brake Pads",
   subtitle: "Fits your 2019 Toyota Camry",
-  price: "$89.99",
+  price: "AED 89.99",
 }))

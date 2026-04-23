@@ -9,7 +9,7 @@ export const bookingStats = [
   },
   {
     title: "Total Spent",
-    value: "$145",
+    value: "AED 145",
   },
 ]
 
@@ -21,7 +21,7 @@ export const bookings = [
     garage: "AutoFix Garage",
     service: "Oil Change",
     vehicle: "2019 Toyota Camry",
-    price: "$45.00",
+    price: "AED 45.00",
     status: "Confirmed",
     badgeClass:
       "border-brand-info/20 bg-brand-info/10 text-brand-info hover:bg-brand-info/10",
@@ -33,7 +33,7 @@ export const bookings = [
     garage: "Quick Service Center",
     service: "Brake Inspection",
     vehicle: "2021 Honda Accord",
-    price: "$65.00",
+    price: "AED 65.00",
     status: "Confirmed",
     badgeClass:
       "border-brand-info/20 bg-brand-info/10 text-brand-info hover:bg-brand-info/10",
@@ -45,7 +45,7 @@ export const bookings = [
     garage: "AutoFix Garage",
     service: "Tire Rotation",
     vehicle: "2019 Toyota Camry",
-    price: "$35.00",
+    price: "AED 35.00",
     status: "Completed",
     badgeClass:
       "border-brand-success/20 bg-brand-success/10 text-brand-success hover:bg-brand-success/10",

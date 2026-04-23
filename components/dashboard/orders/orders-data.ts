@@ -35,7 +35,7 @@ export const orders = [
     part: "Brake Pads - Front",
     vehicle: "2019 Toyota Camry",
     supplier: "Acme Auto Parts",
-    total: "$89.99",
+    total: "AED 89.99",
     status: "Shipped",
     badgeClass:
       "border-brand-info/20 bg-brand-info/10 text-brand-info hover:bg-brand-info/10",
@@ -46,7 +46,7 @@ export const orders = [
     part: "Oil Filter",
     vehicle: "2019 Toyota Camry",
     supplier: "Premium Parts Co",
-    total: "$24.99",
+    total: "AED 24.99",
     status: "Delivered",
     badgeClass:
       "border-brand-success/20 bg-brand-success/10 text-brand-success hover:bg-brand-success/10",
@@ -57,7 +57,7 @@ export const orders = [
     part: "Air Filter",
     vehicle: "2021 Honda Accord",
     supplier: "QuickParts Supply",
-    total: "$19.99",
+    total: "AED 19.99",
     status: "Processing",
     badgeClass:
       "border-brand-warning/20 bg-brand-warning/10 text-brand-warning hover:bg-brand-warning/10",
@@ -68,7 +68,7 @@ export const orders = [
     part: "Spark Plugs",
     vehicle: "2018 Ford F-150",
     supplier: "Acme Auto Parts",
-    total: "$45.50",
+    total: "AED 45.50",
     status: "Delivered",
     badgeClass:
       "border-brand-success/20 bg-brand-success/10 text-brand-success hover:bg-brand-success/10",

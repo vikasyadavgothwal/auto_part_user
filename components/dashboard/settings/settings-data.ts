@@ -13,7 +13,7 @@ export const organizationSettings = [
   {
     id: "currency",
     label: "Preferred Currency",
-    defaultValue: "USD",
+    defaultValue: "AED",
   },
   {
     id: "timezone",

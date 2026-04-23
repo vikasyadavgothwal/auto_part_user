@@ -1,6 +1,5 @@
 import Link from "next/link"
 import { ShieldCheck, Truck } from "lucide-react"
-
 import { Button } from "@/components/ui/button"
 import {
   Card,
