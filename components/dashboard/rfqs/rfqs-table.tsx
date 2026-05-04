@@ -43,7 +43,7 @@ const tableHeaders = [
 export function RfqsTable({ rfqs }: RfqsTableProps) {
   return (
     <Card className="overflow-hidden rounded-sm border border-border bg-brand-panel py-0">
-      <div className="overflow-x-auto">
+      <div className="no-scrollbar overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="border-b border-border bg-brand-surface hover:bg-brand-surface">

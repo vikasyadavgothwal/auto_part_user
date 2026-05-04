@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 
 export function BookingsPage() {
   return (
-    <div className="space-y-8">
+    <div className="min-w-0 space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="mb-2 text-3xl font-bold text-foreground">
