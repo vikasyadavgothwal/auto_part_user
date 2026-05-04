@@ -39,7 +39,7 @@ export function ActiveRfqsSection({ rfqs }: ActiveRfqsSectionProps) {
         </Link>
       </div>
 
-      <Card className="overflow-hidden rounded-sm border border-border bg-brand-panel">
+      <Card className="overflow-hidden rounded-sm border border-border bg-brand-panel py-0">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>

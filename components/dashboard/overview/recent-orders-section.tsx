@@ -40,9 +40,9 @@ export function RecentOrdersSection({ orders }: RecentOrdersSectionProps) {
         </Link>
       </div>
 
-      <Card className="overflow-hidden rounded-sm border border-border bg-brand-panel">
+      <Card className="overflow-hidden rounded-sm border border-border bg-brand-panel py-0">
         <div className="overflow-x-auto">
-          <Table>
+          <Table >
             <TableHeader>
               <TableRow className="border-b border-border bg-brand-surface hover:bg-brand-surface">
                 {tableHeaders.map((header) => (
