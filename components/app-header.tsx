@@ -1,21 +1,16 @@
-"use client"
+"use client";
 
-import {
-  Bell,
-  ChevronDown,
-  Search,
-  User,
-} from "lucide-react"
+import { Bell, ChevronDown, Search, User } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { SidebarTrigger } from "@/components/ui/sidebar"
-import { NotificationPopup } from "@/components/notification-popup"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { NotificationPopup } from "@/components/notification-popup";
 
 export function DashboardHeader() {
   return (
@@ -74,5 +69,5 @@ export function DashboardHeader() {
         </div>
       </div>
     </header>
-  )
+  );
 }
