@@ -67,7 +67,7 @@ export function DashboardHeader() {
           >
             <User className="h-5 w-5 text-brand-muted" />
             <span className="hidden text-sm font-medium text-foreground sm:inline">
-              ABC Logistics
+              ABC Smith
             </span>
             <ChevronDown className="h-4 w-4 text-brand-muted" />
           </Button>
