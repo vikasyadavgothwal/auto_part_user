@@ -8,9 +8,6 @@ export function SettingsPage() {
         <h1 className="mb-2 text-3xl font-bold text-foreground">
           Workspace Settings
         </h1>
-        <p className="text-brand-muted">
-          Manage the fleet workspace details used across the dashboard.
-        </p>
       </div>
 
       <OrganizationProfileCard settings={organizationSettings} />
