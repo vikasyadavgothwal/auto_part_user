@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -31,10 +31,6 @@ export function VehicleForm({
   className,
 }: VehicleFormProps) {
   const [values, setValues] = useState<VehicleFormValues>(initialValues)
-
-  useEffect(() => {
-    setValues(initialValues)
-  }, [initialValues])
 
   function updateValue<Key extends keyof VehicleFormValues>(
     key: Key,

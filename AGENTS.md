@@ -3,3 +3,53 @@
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
+
+<!-- BEGIN:autoparts-pro-codex-docs -->
+
+## AutoParts Pro App Scope
+
+App: `user_dashboard`  
+Role: User dashboard
+
+### Responsibility
+
+Logged-in customer dashboard for bookings, orders, parts, RFQs, vehicles, settings, and user auth.
+
+### Important Folders and Files
+
+- app/(dashboard)/bookings, orders, parts, rfqs, settings, vehicles
+- app/api/auth
+- `components/dashboard, components/auth, components/vehicle-form.tsx`
+- `lib/auth, lib/routes.ts, lib/vehicles.ts`
+
+### Connected Apps and Services
+
+- auto_parts_admin/backend APIs through ADMIN_API_BASE_URL, BACKEND_URL, or NEXT_PUBLIC_ADMIN_API_BASE_URL
+- Firebase web authentication
+- User orders/RFQs/bookings connected to marketplace and admin flows
+
+### Rules for Working Here
+
+- Read the project root `AGENTS.md` and `docs/` files before cross-app work.
+- Keep changes inside `user_dashboard` unless the task explicitly requires another app.
+- Do not change API contracts, Prisma schema, auth cookies/JWTs, Firebase config, route base paths, or shared env behavior without listing affected apps first.
+- Do not mix public website, admin, user, supplier, garage, and fleet business logic unless existing imports or APIs already connect them.
+- Preserve existing Next.js version guidance and local architecture rules.
+
+### What Not to Touch Unless Explicitly Required
+
+- Other app folders.
+- Package manager files and lockfiles.
+- `.env` files and secrets.
+- Generated folders such as `.next` and `node_modules`.
+- Backend/API or Prisma code outside this app's scope.
+
+### Check After Changes
+
+- Bookings, orders, parts, RFQs, vehicles, settings, and login pages render
+- Auth cookies are handled through backend routes
+- User flow changes are checked against public site and admin APIs
+- Run the commands documented in this app README when relevant.
+- Update project root `docs/AI_HANDOFF.md` after major changes.
+
+<!-- END:autoparts-pro-codex-docs -->
