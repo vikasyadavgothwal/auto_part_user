@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { readApiResponse } from "@/lib/api-response"
 import { authenticatedFetch } from "@/lib/auth/client"
 import type { DashboardUser } from "@/lib/auth/types"
 import { appRoutes, withBasePath } from "@/lib/routes"
@@ -41,6 +42,22 @@ type VehiclesApiResponse = {
   message?: string
 }
 
+type RfqSubmitResponse = {
+  ok: boolean
+  message?: string
+  rfq?: { publicId?: string }
+}
+
+type FieldErrors = Record<string, string>
+
+const maxParts = 20
+const maxAttachmentSize = 10 * 1024 * 1024
+const allowedAttachmentTypes = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+])
+
 const newPart = (id: number): PartItem => ({
   id,
   partName: "",
@@ -57,6 +74,7 @@ const defaultDeadline = () => {
 }
 
 const digitsOnly = (value: string) => value.replace(/\D/g, "")
+const cleanText = (value: string) => value.trim().replace(/\s+/g, " ")
 
 const decimalOnly = (value: string) => {
   const normalized = value.replace(/[^\d.]/g, "")
@@ -70,6 +88,93 @@ const userName = (user: DashboardUser) =>
   user.companyName ||
   user.email ||
   "Customer"
+
+const partErrorKey = (id: number, field: keyof PartItem) =>
+  `part-${id}-${field}`
+
+const currentVehicleYear = new Date().getFullYear() + 1
+
+const addTextError = (
+  errors: FieldErrors,
+  key: string,
+  value: string,
+  label: string,
+  maxLength: number,
+  required = true,
+) => {
+  const normalized = cleanText(value)
+  if (required && !normalized) {
+    errors[key] = `${label} is required`
+    return normalized
+  }
+  if (normalized.length > maxLength) {
+    errors[key] = `${label} must be ${maxLength} characters or fewer`
+  }
+  return normalized
+}
+
+const addVehicleYearError = (
+  errors: FieldErrors,
+  key: string,
+  value: string,
+) => {
+  const normalized = digitsOnly(value)
+  const year = Number(normalized)
+  if (!normalized) {
+    errors[key] = "Vehicle year is required"
+  } else if (
+    !/^\d{4}$/.test(normalized) ||
+    year < 1886 ||
+    year > currentVehicleYear
+  ) {
+    errors[key] = `Vehicle year must be between 1886 and ${currentVehicleYear}`
+  }
+  return normalized
+}
+
+const addVinError = (
+  errors: FieldErrors,
+  key: string,
+  value: string,
+  required = false,
+) => {
+  const normalized = value.trim().toUpperCase()
+  if (required && !normalized) {
+    errors[key] = "VIN is required"
+    return normalized
+  }
+  if (normalized && !/^[A-HJ-NPR-Z0-9]{17}$/.test(normalized)) {
+    errors[key] = "VIN must be exactly 17 characters and cannot include I, O, or Q"
+  }
+  return normalized
+}
+
+const addEmailError = (errors: FieldErrors, key: string, value: string) => {
+  const normalized = addTextError(errors, key, value, "Email", 180)
+  if (normalized && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+    errors[key] = "Enter a valid email address"
+  }
+  return normalized
+}
+
+const addPhoneError = (errors: FieldErrors, key: string, value: string) => {
+  const normalized = addTextError(errors, key, value, "Phone", 20)
+  if (normalized && !/^[+\d][\d\s()-]{6,20}$/.test(normalized)) {
+    errors[key] = "Enter a valid phone number"
+  }
+  return normalized
+}
+
+const addDeadlineError = (errors: FieldErrors, key: string, value: string) => {
+  const normalized = value.trim()
+  const deadlineDate = new Date(`${normalized}T23:59:59`)
+  if (!normalized) {
+    errors[key] = "Response deadline is required"
+  } else if (Number.isNaN(deadlineDate.getTime()) || deadlineDate <= new Date()) {
+    errors[key] = "Response deadline must be in the future"
+  }
+  return normalized
+}
 
 export function CreateRfqPage({ user }: { user: DashboardUser }) {
   const router = useRouter()
@@ -95,15 +200,16 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
   const [phone, setPhone] = useState(user.phone || "")
   const [attachment, setAttachment] = useState<File | null>(null)
   const [submitError, setSubmitError] = useState("")
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     authenticatedFetch(withBasePath("/api/vehicles?page=1&pageSize=50"))
       .then(async (response) => {
-        const payload = (await response.json()) as VehiclesApiResponse
-        if (!response.ok || !payload.ok) {
-          throw new Error(payload.message ?? "Unable to load vehicles")
-        }
+        const payload = await readApiResponse<VehiclesApiResponse>(
+          response,
+          "Unable to load vehicles",
+        )
         const savedVehicles = payload.vehicles ?? []
         setVehicles(savedVehicles)
         const primaryVehicle = savedVehicles.find((item) => item.primary) ?? savedVehicles[0]
@@ -128,19 +234,109 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
     [parts],
   )
 
-  const canContinueStep1 = parts.every(
-    (part) => part.partName.trim() && Number(part.quantity) > 0,
-  )
-  const canContinueStep2 =
-    projectName.trim() &&
-    deadline.trim() &&
-    vehicle.year.trim() &&
-    vehicle.make.trim() &&
-    vehicle.model.trim() &&
-    companyName.trim() &&
-    contactName.trim() &&
-    email.trim() &&
-    phone.trim()
+  function clearError(key: string) {
+    setFieldErrors((current) => {
+      if (!current[key]) return current
+      const next = { ...current }
+      delete next[key]
+      return next
+    })
+  }
+
+  function fieldError(key: string) {
+    return fieldErrors[key] ? (
+      <p className="text-xs font-medium text-destructive">{fieldErrors[key]}</p>
+    ) : null
+  }
+
+  function validateParts() {
+    const errors: FieldErrors = {}
+
+    if (!parts.length) {
+      errors.parts = "Add at least one part"
+      return errors
+    }
+    if (parts.length > maxParts) {
+      errors.parts = `An RFQ can include up to ${maxParts} parts`
+    }
+
+    parts.forEach((part) => {
+      addTextError(
+        errors,
+        partErrorKey(part.id, "partName"),
+        part.partName,
+        "Part name",
+        120,
+      )
+      addTextError(
+        errors,
+        partErrorKey(part.id, "partNumber"),
+        part.partNumber,
+        "Part number",
+        80,
+        false,
+      )
+      const quantity = Number(part.quantity)
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999) {
+        errors[partErrorKey(part.id, "quantity")] =
+          "Quantity must be between 1 and 999"
+      }
+      if (part.targetPrice) {
+        const targetPrice = Number(part.targetPrice)
+        if (
+          !/^\d+(\.\d{1,2})?$/.test(part.targetPrice) ||
+          !Number.isFinite(targetPrice) ||
+          targetPrice < 0 ||
+          targetPrice > 999999.99
+        ) {
+          errors[partErrorKey(part.id, "targetPrice")] =
+            "Target price must be a valid amount up to AED 999,999.99"
+        }
+      }
+      addTextError(
+        errors,
+        partErrorKey(part.id, "notes"),
+        part.notes,
+        "Notes",
+        500,
+        false,
+      )
+    })
+
+    return errors
+  }
+
+  function validateDetails() {
+    const errors: FieldErrors = {}
+    addTextError(errors, "projectName", projectName, "Project name", 120)
+    addDeadlineError(errors, "deadline", deadline)
+    addVehicleYearError(errors, "vehicle.year", vehicle.year)
+    addTextError(errors, "vehicle.make", vehicle.make, "Make", 80)
+    addTextError(errors, "vehicle.model", vehicle.model, "Model", 80)
+    addTextError(errors, "vehicle.trim", vehicle.trim, "Trim", 80, false)
+    addVinError(errors, "vehicle.vin", vehicle.vin)
+    addTextError(errors, "companyName", companyName, "Customer / company", 120)
+    addTextError(errors, "contactName", contactName, "Contact name", 120)
+    addEmailError(errors, "email", email)
+    addPhoneError(errors, "phone", phone)
+    addTextError(errors, "description", description, "Description", 1000, false)
+
+    if (attachment) {
+      if (!allowedAttachmentTypes.has(attachment.type)) {
+        errors.attachment = "Attachment must be a PDF, PNG, or JPG file"
+      } else if (attachment.size > maxAttachmentSize) {
+        errors.attachment = "Attachment must be 10 MB or smaller"
+      }
+    }
+
+    return errors
+  }
+
+  function firstStepForErrors(errors: FieldErrors): Step {
+    return Object.keys(errors).some((key) => key.startsWith("part-") || key === "parts")
+      ? 1
+      : 2
+  }
 
   function selectVehicle(vehicleId: string) {
     setSelectedVehicleId(vehicleId)
@@ -153,12 +349,27 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
       trim: "",
       vin: savedVehicle.vin,
     })
+    setFieldErrors((current) => {
+      const next = { ...current }
+      delete next["vehicle.year"]
+      delete next["vehicle.make"]
+      delete next["vehicle.model"]
+      delete next["vehicle.trim"]
+      delete next["vehicle.vin"]
+      return next
+    })
   }
 
   function updatePart(id: number, field: keyof PartItem, value: string | number) {
+    clearError(partErrorKey(id, field))
     setParts((current) =>
       current.map((part) => (part.id === id ? { ...part, [field]: value } : part)),
     )
+  }
+
+  function updateVehicle(field: keyof VehicleDetails, value: string) {
+    clearError(`vehicle.${field}`)
+    setVehicle((current) => ({ ...current, [field]: value }))
   }
 
   function removePart(id: number) {
@@ -168,12 +379,24 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
   }
 
   function addPart() {
+    if (parts.length >= maxParts) {
+      setSubmitError(`An RFQ can include up to ${maxParts} parts.`)
+      return
+    }
+    setSubmitError("")
     setParts((current) => [...current, newPart(Date.now())])
   }
 
   function handleNext() {
-    if (step === 1 && canContinueStep1) setStep(2)
-    if (step === 2 && canContinueStep2) setStep(3)
+    const errors = step === 1 ? validateParts() : validateDetails()
+    setFieldErrors(errors)
+    if (Object.keys(errors).length) {
+      setSubmitError("Fix the highlighted fields before continuing.")
+      return
+    }
+    setSubmitError("")
+    if (step === 1) setStep(2)
+    if (step === 2) setStep(3)
   }
 
   function handleBack() {
@@ -182,28 +405,42 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
   }
 
   async function handleSubmit() {
-    setIsSubmitting(true)
     setSubmitError("")
+    const errors = { ...validateParts(), ...validateDetails() }
+    setFieldErrors(errors)
+    if (Object.keys(errors).length) {
+      setStep(firstStepForErrors(errors))
+      setSubmitError("Fix the highlighted fields before submitting.")
+      return
+    }
+
+    setIsSubmitting(true)
     try {
       const payload = {
         source: "user",
         userVehicleId: selectedVehicleId || undefined,
-        projectName,
-        description,
+        projectName: cleanText(projectName),
+        description: cleanText(description),
         responseDeadline: new Date(`${deadline}T23:59:59`).toISOString(),
         deliveryRequirement,
         paymentTerms,
-        companyName,
-        contactName,
-        email,
-        phone,
-        vehicle,
+        companyName: cleanText(companyName),
+        contactName: cleanText(contactName),
+        email: cleanText(email).toLowerCase(),
+        phone: cleanText(phone),
+        vehicle: {
+          year: digitsOnly(vehicle.year),
+          make: cleanText(vehicle.make),
+          model: cleanText(vehicle.model),
+          trim: cleanText(vehicle.trim),
+          vin: vehicle.vin.trim().toUpperCase(),
+        },
         parts: parts.map((part) => ({
-          partName: part.partName,
-          partNumber: part.partNumber,
+          partName: cleanText(part.partName),
+          partNumber: cleanText(part.partNumber),
           quantity: part.quantity,
           targetPrice: part.targetPrice,
-          notes: part.notes,
+          notes: cleanText(part.notes),
         })),
       }
       const body = new FormData()
@@ -214,14 +451,11 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
         method: "POST",
         body,
       })
-      const result = (await response.json()) as {
-        ok: boolean
-        message?: string
-        rfq?: { publicId?: string }
-      }
-      if (!response.ok || !result.ok) {
-        throw new Error(result.message ?? "Unable to submit RFQ")
-      }
+      const result = await readApiResponse<RfqSubmitResponse>(
+        response,
+        "Unable to submit RFQ",
+        { ok: true },
+      )
       const created = result.rfq?.publicId
         ? `?created=${encodeURIComponent(result.rfq.publicId)}`
         : "?created=1"
@@ -280,6 +514,7 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
               <p className="mt-1 text-sm text-brand-muted">
                 Add one or more parts you want suppliers to quote.
               </p>
+              {fieldError("parts")}
             </div>
 
             <div className="space-y-4">
@@ -306,19 +541,25 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
                       <Label>Part Name *</Label>
                       <Input
                         value={part.partName}
+                        maxLength={120}
+                        aria-invalid={Boolean(fieldErrors[partErrorKey(part.id, "partName")])}
                         onChange={(event) => updatePart(part.id, "partName", event.target.value)}
                         placeholder="Brake pads"
                         className="h-10 border-border bg-brand-panel"
                       />
+                      {fieldError(partErrorKey(part.id, "partName"))}
                     </label>
                     <label className="space-y-2">
                       <Label>Part Number</Label>
                       <Input
                         value={part.partNumber}
+                        maxLength={80}
+                        aria-invalid={Boolean(fieldErrors[partErrorKey(part.id, "partNumber")])}
                         onChange={(event) => updatePart(part.id, "partNumber", event.target.value)}
                         placeholder="BC1259"
                         className="h-10 border-border bg-brand-panel"
                       />
+                      {fieldError(partErrorKey(part.id, "partNumber"))}
                     </label>
                     <label className="space-y-2">
                       <Label>Quantity *</Label>
@@ -327,36 +568,45 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
                         inputMode="numeric"
                         pattern="[0-9]*"
                         value={part.quantity}
+                        maxLength={3}
+                        aria-invalid={Boolean(fieldErrors[partErrorKey(part.id, "quantity")])}
                         onChange={(event) =>
                           updatePart(
                             part.id,
                             "quantity",
-                            Number(digitsOnly(event.target.value)) || 1,
+                            Number(digitsOnly(event.target.value).slice(0, 3)) || 1,
                           )
                         }
                         className="h-10 border-border bg-brand-panel"
                       />
+                      {fieldError(partErrorKey(part.id, "quantity"))}
                     </label>
                     <label className="space-y-2">
                       <Label>Target Price</Label>
                       <Input
                         inputMode="decimal"
                         value={part.targetPrice}
+                        maxLength={10}
+                        aria-invalid={Boolean(fieldErrors[partErrorKey(part.id, "targetPrice")])}
                         onChange={(event) =>
                           updatePart(part.id, "targetPrice", decimalOnly(event.target.value))
                         }
                         placeholder="125"
                         className="h-10 border-border bg-brand-panel"
                       />
+                      {fieldError(partErrorKey(part.id, "targetPrice"))}
                     </label>
                     <label className="space-y-2 md:col-span-2">
                       <Label>Notes</Label>
                       <Input
                         value={part.notes}
+                        maxLength={500}
+                        aria-invalid={Boolean(fieldErrors[partErrorKey(part.id, "notes")])}
                         onChange={(event) => updatePart(part.id, "notes", event.target.value)}
                         placeholder="Brand preference, warranty requirement, or other details"
                         className="h-10 border-border bg-brand-panel"
                       />
+                      {fieldError(partErrorKey(part.id, "notes"))}
                     </label>
                   </div>
                 </div>
@@ -367,6 +617,7 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
               type="button"
               variant="outline"
               className="h-12 w-full gap-2 border-dashed"
+              disabled={parts.length >= maxParts}
               onClick={addPart}
             >
               <Plus className="h-4 w-4" />
@@ -406,9 +657,15 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
                 <Label>Project Name *</Label>
                 <Input
                   value={projectName}
-                  onChange={(event) => setProjectName(event.target.value)}
+                  maxLength={120}
+                  aria-invalid={Boolean(fieldErrors.projectName)}
+                  onChange={(event) => {
+                    clearError("projectName")
+                    setProjectName(event.target.value)
+                  }}
                   className="h-10 border-border bg-brand-surface"
                 />
+                {fieldError("projectName")}
               </label>
               <label className="space-y-2">
                 <Label>Response Deadline *</Label>
@@ -417,105 +674,165 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
                   <Input
                     type="date"
                     value={deadline}
-                    onChange={(event) => setDeadline(event.target.value)}
+                    aria-invalid={Boolean(fieldErrors.deadline)}
+                    onChange={(event) => {
+                      clearError("deadline")
+                      setDeadline(event.target.value)
+                    }}
                     className="h-10 border-border bg-brand-surface pl-9"
                   />
                 </div>
+                {fieldError("deadline")}
               </label>
               <label className="space-y-2">
                 <Label>Vehicle Year *</Label>
                 <Input
                   inputMode="numeric"
                   value={vehicle.year}
-                  onChange={(event) => setVehicle({ ...vehicle, year: event.target.value })}
+                  maxLength={4}
+                  aria-invalid={Boolean(fieldErrors["vehicle.year"])}
+                  onChange={(event) =>
+                    updateVehicle("year", digitsOnly(event.target.value).slice(0, 4))
+                  }
                   className="h-10 border-border bg-brand-surface"
                 />
+                {fieldError("vehicle.year")}
               </label>
               <label className="space-y-2">
                 <Label>Make *</Label>
                 <Input
                   value={vehicle.make}
-                  onChange={(event) => setVehicle({ ...vehicle, make: event.target.value })}
+                  maxLength={80}
+                  aria-invalid={Boolean(fieldErrors["vehicle.make"])}
+                  onChange={(event) => updateVehicle("make", event.target.value)}
                   className="h-10 border-border bg-brand-surface"
                 />
+                {fieldError("vehicle.make")}
               </label>
               <label className="space-y-2">
                 <Label>Model *</Label>
                 <Input
                   value={vehicle.model}
-                  onChange={(event) => setVehicle({ ...vehicle, model: event.target.value })}
+                  maxLength={80}
+                  aria-invalid={Boolean(fieldErrors["vehicle.model"])}
+                  onChange={(event) => updateVehicle("model", event.target.value)}
                   className="h-10 border-border bg-brand-surface"
                 />
+                {fieldError("vehicle.model")}
               </label>
               <label className="space-y-2">
                 <Label>Trim</Label>
                 <Input
                   value={vehicle.trim}
-                  onChange={(event) => setVehicle({ ...vehicle, trim: event.target.value })}
+                  maxLength={80}
+                  aria-invalid={Boolean(fieldErrors["vehicle.trim"])}
+                  onChange={(event) => updateVehicle("trim", event.target.value)}
                   className="h-10 border-border bg-brand-surface"
                 />
+                {fieldError("vehicle.trim")}
               </label>
               <label className="space-y-2 md:col-span-2">
                 <Label>VIN</Label>
                 <Input
                   value={vehicle.vin}
+                  maxLength={17}
+                  aria-invalid={Boolean(fieldErrors["vehicle.vin"])}
                   onChange={(event) =>
-                    setVehicle({ ...vehicle, vin: event.target.value.toUpperCase() })
+                    updateVehicle(
+                      "vin",
+                      event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17),
+                    )
                   }
                   className="h-10 border-border bg-brand-surface uppercase"
                 />
+                {fieldError("vehicle.vin")}
               </label>
               <label className="space-y-2">
                 <Label>Customer / Company *</Label>
                 <Input
                   value={companyName}
-                  onChange={(event) => setCompanyName(event.target.value)}
+                  maxLength={120}
+                  aria-invalid={Boolean(fieldErrors.companyName)}
+                  onChange={(event) => {
+                    clearError("companyName")
+                    setCompanyName(event.target.value)
+                  }}
                   className="h-10 border-border bg-brand-surface"
                 />
+                {fieldError("companyName")}
               </label>
               <label className="space-y-2">
                 <Label>Contact Name *</Label>
                 <Input
                   value={contactName}
-                  onChange={(event) => setContactName(event.target.value)}
+                  maxLength={120}
+                  aria-invalid={Boolean(fieldErrors.contactName)}
+                  onChange={(event) => {
+                    clearError("contactName")
+                    setContactName(event.target.value)
+                  }}
                   className="h-10 border-border bg-brand-surface"
                 />
+                {fieldError("contactName")}
               </label>
               <label className="space-y-2">
                 <Label>Email *</Label>
                 <Input
                   type="email"
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  maxLength={180}
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  onChange={(event) => {
+                    clearError("email")
+                    setEmail(event.target.value)
+                  }}
                   className="h-10 border-border bg-brand-surface"
                 />
+                {fieldError("email")}
               </label>
               <label className="space-y-2">
                 <Label>Phone *</Label>
                 <Input
                   value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
+                  maxLength={20}
+                  aria-invalid={Boolean(fieldErrors.phone)}
+                  onChange={(event) => {
+                    clearError("phone")
+                    setPhone(event.target.value)
+                  }}
                   className="h-10 border-border bg-brand-surface"
                 />
+                {fieldError("phone")}
               </label>
               <label className="space-y-2 md:col-span-2">
                 <Label>Description</Label>
                 <textarea
                   value={description}
-                  onChange={(event) => setDescription(event.target.value)}
+                  maxLength={1000}
+                  aria-invalid={Boolean(fieldErrors.description)}
+                  onChange={(event) => {
+                    clearError("description")
+                    setDescription(event.target.value)
+                  }}
                   rows={4}
                   className="w-full resize-none rounded-sm border border-border bg-brand-surface px-3 py-2 text-sm outline-none focus-visible:border-primary"
                   placeholder="Any extra fitment, brand, warranty, or delivery details"
                 />
+                {fieldError("description")}
               </label>
               <label className="space-y-2 md:col-span-2">
                 <Label>Attachment</Label>
                 <Input
                   type="file"
                   accept="application/pdf,image/png,image/jpeg"
-                  onChange={(event) => setAttachment(event.target.files?.[0] ?? null)}
+                  aria-invalid={Boolean(fieldErrors.attachment)}
+                  onChange={(event) => {
+                    clearError("attachment")
+                    setAttachment(event.target.files?.[0] ?? null)
+                  }}
                   className="h-10 border-border bg-brand-surface"
                 />
+                {fieldError("attachment")}
               </label>
             </div>
           </CardContent>
@@ -587,7 +904,7 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
         {step < 3 ? (
           <Button
             type="button"
-            disabled={step === 1 ? !canContinueStep1 : !canContinueStep2}
+            disabled={isSubmitting}
             onClick={handleNext}
             className="gap-2 bg-primary text-primary-foreground hover:bg-brand-primary-hover"
           >

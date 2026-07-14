@@ -1,5 +1,4 @@
-import { Download } from "lucide-react";
-
+import { ExportOrdersButton } from "@/components/dashboard/orders/export-orders-button";
 import { OrderFilters } from "@/components/dashboard/orders/order-filters";
 import { OrderStats } from "@/components/dashboard/orders/order-stats";
 import { OrdersTable } from "@/components/dashboard/orders/orders-table";
@@ -20,12 +19,36 @@ const filterConfig = [
 
 type OrdersPageProps = {
   status?: string;
+  page?: number;
 };
 
-export async function OrdersPage({ status = "" }: OrdersPageProps) {
-  const ordersData = await getUserOrders({ status });
+const ordersPageSize = 10;
+
+const normalizedPage = (page: number | undefined) =>
+  Number.isFinite(page) && page && page > 0 ? Math.floor(page) : 1;
+
+const pageHref = (status: string, page: number) => {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  if (page > 1) params.set("page", String(page));
+  const query = params.toString();
+  return query ? `/orders?${query}` : "/orders";
+};
+
+export async function OrdersPage({ status = "", page = 1 }: OrdersPageProps) {
+  const currentPage = normalizedPage(page);
+  const ordersData = await getUserOrders({
+    status,
+    page: currentPage,
+    pageSize: ordersPageSize,
+  });
   const orders = mapUserOrders(ordersData.orders);
   const orderStats = buildUserOrderStats(ordersData.summary);
+  const pagination = ordersData.pagination;
+  const rangeStart = pagination.total
+    ? (pagination.page - 1) * pagination.pageSize + 1
+    : 0;
+  const rangeEnd = Math.min(pagination.page * pagination.pageSize, pagination.total);
   const filters = filterConfig.map((filter) => ({
     label: filter.label,
     active: filter.status === status,
@@ -42,21 +65,46 @@ export async function OrdersPage({ status = "" }: OrdersPageProps) {
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          className="h-auto w-full gap-2 rounded-sm border-border bg-brand-panel-strong px-6 py-3 text-foreground hover:border-primary hover:bg-brand-panel-strong sm:w-auto"
-        >
-          <Download className="h-5 w-5" />
-          Export Orders
-        </Button>
+        <ExportOrdersButton />
       </div>
 
       <OrderStats stats={orderStats} />
       <OrderFilters filters={filters} />
       <p className="text-sm text-brand-muted">
-        Showing {orders.length} of {ordersData.pagination.total} orders.
+        Showing {rangeStart}-{rangeEnd} of {pagination.total} orders.
       </p>
       <OrdersTable orders={orders} />
+      <div className="flex flex-col gap-3 text-sm text-brand-muted sm:flex-row sm:items-center sm:justify-between">
+        <p>
+          Page {pagination.page} of {pagination.totalPages}
+        </p>
+        <div className="flex items-center gap-2">
+          <Button
+            asChild={pagination.page > 1}
+            variant="outline"
+            size="sm"
+            disabled={pagination.page <= 1}
+          >
+            {pagination.page > 1 ? (
+              <a href={pageHref(status, pagination.page - 1)}>Previous</a>
+            ) : (
+              <span>Previous</span>
+            )}
+          </Button>
+          <Button
+            asChild={pagination.page < pagination.totalPages}
+            variant="outline"
+            size="sm"
+            disabled={pagination.page >= pagination.totalPages}
+          >
+            {pagination.page < pagination.totalPages ? (
+              <a href={pageHref(status, pagination.page + 1)}>Next</a>
+            ) : (
+              <span>Next</span>
+            )}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

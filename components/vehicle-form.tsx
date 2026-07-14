@@ -1,5 +1,6 @@
 "use client"
 import { useState } from "react"
+
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -15,12 +16,77 @@ const vehicleStatusOptions: VehicleStatus[] = [
   "In Service",
   "Inactive",
 ]
+
 type VehicleFormProps = {
   initialValues?: VehicleFormValues
   submitLabel: string
   onSubmit: (values: VehicleFormValues) => void
   onCancel?: () => void
   className?: string
+}
+
+type VehicleFormErrors = Partial<Record<keyof VehicleFormValues, string>>
+
+const currentVehicleYear = new Date().getFullYear() + 1
+const maxMileage = 2_000_000
+const vehicleStatusSet = new Set<VehicleStatus>(vehicleStatusOptions)
+const digitsOnly = (value: string) => value.replace(/\D/g, "")
+const vinInput = (value: string) =>
+  value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17)
+
+function validateVehicleForm(values: VehicleFormValues) {
+  const nextValues: VehicleFormValues = {
+    year: digitsOnly(values.year).slice(0, 4),
+    make: values.make.trim().replace(/\s+/g, " "),
+    model: values.model.trim().replace(/\s+/g, " "),
+    vin: vinInput(values.vin),
+    mileage: digitsOnly(values.mileage).slice(0, 7),
+    status: vehicleStatusSet.has(values.status) ? values.status : "Active",
+    primary: Boolean(values.primary),
+  }
+  const errors: VehicleFormErrors = {}
+  const parsedYear = Number(nextValues.year)
+  const parsedMileage = Number(nextValues.mileage)
+
+  if (!nextValues.year) {
+    errors.year = "Vehicle year is required"
+  } else if (
+    !/^\d{4}$/.test(nextValues.year) ||
+    parsedYear < 1886 ||
+    parsedYear > currentVehicleYear
+  ) {
+    errors.year = `Vehicle year must be between 1886 and ${currentVehicleYear}`
+  }
+
+  if (!nextValues.make) {
+    errors.make = "Make is required"
+  } else if (nextValues.make.length > 80) {
+    errors.make = "Make must be 80 characters or fewer"
+  }
+
+  if (!nextValues.model) {
+    errors.model = "Model is required"
+  } else if (nextValues.model.length > 80) {
+    errors.model = "Model must be 80 characters or fewer"
+  }
+
+  if (!nextValues.vin) {
+    errors.vin = "VIN is required"
+  } else if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(nextValues.vin)) {
+    errors.vin = "VIN must be exactly 17 characters and cannot include I, O, or Q"
+  }
+
+  if (!nextValues.mileage) {
+    errors.mileage = "Mileage is required"
+  } else if (!Number.isInteger(parsedMileage) || parsedMileage > maxMileage) {
+    errors.mileage = `Mileage must be a whole number up to ${maxMileage.toLocaleString()}`
+  }
+
+  if (!vehicleStatusSet.has(nextValues.status)) {
+    errors.status = "Select a valid vehicle status"
+  }
+
+  return { errors, values: nextValues }
 }
 
 export function VehicleForm({
@@ -31,23 +97,44 @@ export function VehicleForm({
   className,
 }: VehicleFormProps) {
   const [values, setValues] = useState<VehicleFormValues>(initialValues)
+  const [errors, setErrors] = useState<VehicleFormErrors>({})
 
   function updateValue<Key extends keyof VehicleFormValues>(
     key: Key,
     nextValue: VehicleFormValues[Key]
   ) {
+    setErrors((currentErrors) => {
+      if (!currentErrors[key]) return currentErrors
+      const nextErrors = { ...currentErrors }
+      delete nextErrors[key]
+      return nextErrors
+    })
     setValues((currentValues) => ({
       ...currentValues,
       [key]: nextValue,
     }))
   }
 
+  function errorText(key: keyof VehicleFormValues) {
+    return errors[key] ? (
+      <p className="text-xs font-medium text-destructive">{errors[key]}</p>
+    ) : null
+  }
+
   return (
     <form
+      noValidate
       className={cn("space-y-6", className)}
       onSubmit={(event) => {
         event.preventDefault()
-        onSubmit(values)
+        const result = validateVehicleForm(values)
+        if (Object.keys(result.errors).length) {
+          setValues(result.values)
+          setErrors(result.errors)
+          return
+        }
+        setErrors({})
+        onSubmit(result.values)
       }}
     >
       <div className="grid gap-4 md:grid-cols-3">
@@ -60,9 +147,13 @@ export function VehicleForm({
             placeholder="2019"
             required
             value={values.year}
-            onChange={(event) => updateValue("year", event.target.value)}
+            aria-invalid={Boolean(errors.year)}
+            onChange={(event) =>
+              updateValue("year", digitsOnly(event.target.value).slice(0, 4))
+            }
             className="h-10 border-border bg-brand-surface"
           />
+          {errorText("year")}
         </div>
 
         <div className="space-y-2">
@@ -72,9 +163,12 @@ export function VehicleForm({
             placeholder="Toyota"
             required
             value={values.make}
+            maxLength={80}
+            aria-invalid={Boolean(errors.make)}
             onChange={(event) => updateValue("make", event.target.value)}
             className="h-10 border-border bg-brand-surface"
           />
+          {errorText("make")}
         </div>
 
         <div className="space-y-2">
@@ -84,9 +178,12 @@ export function VehicleForm({
             placeholder="Camry"
             required
             value={values.model}
+            maxLength={80}
+            aria-invalid={Boolean(errors.model)}
             onChange={(event) => updateValue("model", event.target.value)}
             className="h-10 border-border bg-brand-surface"
           />
+          {errorText("model")}
         </div>
       </div>
 
@@ -98,9 +195,12 @@ export function VehicleForm({
             placeholder="JT2BF22K6X0123456"
             required
             value={values.vin}
-            onChange={(event) => updateValue("vin", event.target.value)}
+            maxLength={17}
+            aria-invalid={Boolean(errors.vin)}
+            onChange={(event) => updateValue("vin", vinInput(event.target.value))}
             className="h-10 border-border bg-brand-surface uppercase"
           />
+          {errorText("vin")}
         </div>
 
         <div className="space-y-2">
@@ -111,9 +211,14 @@ export function VehicleForm({
             placeholder="45234"
             required
             value={values.mileage}
-            onChange={(event) => updateValue("mileage", event.target.value)}
+            maxLength={7}
+            aria-invalid={Boolean(errors.mileage)}
+            onChange={(event) =>
+              updateValue("mileage", digitsOnly(event.target.value).slice(0, 7))
+            }
             className="h-10 border-border bg-brand-surface"
           />
+          {errorText("mileage")}
         </div>
       </div>
 
@@ -123,6 +228,7 @@ export function VehicleForm({
           <select
             id="vehicle-status"
             value={values.status}
+            aria-invalid={Boolean(errors.status)}
             onChange={(event) =>
               updateValue("status", event.target.value as VehicleStatus)
             }
@@ -134,6 +240,7 @@ export function VehicleForm({
               </option>
             ))}
           </select>
+          {errorText("status")}
         </div>
 
         <label className="flex min-h-10 items-center gap-3 rounded-sm border border-border bg-brand-surface px-4">

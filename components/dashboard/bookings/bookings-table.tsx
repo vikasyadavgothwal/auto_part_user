@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useMemo, useState, useTransition } from "react"
 import { Star } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -50,6 +50,8 @@ type BookingsTableProps = {
   bookings: Booking[]
 }
 
+const bookingsPageSize = 10
+
 const tableHeaders = [
   "Booking ID",
   "Date",
@@ -69,6 +71,21 @@ export function BookingsTable({ bookings }: BookingsTableProps) {
   const [comment, setComment] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [page, setPage] = useState(1)
+  const totalPages = Math.max(1, Math.ceil(bookings.length / bookingsPageSize))
+  const currentPage = Math.min(page, totalPages)
+  const rangeStart = bookings.length
+    ? (currentPage - 1) * bookingsPageSize + 1
+    : 0
+  const rangeEnd = Math.min(currentPage * bookingsPageSize, bookings.length)
+  const visibleBookings = useMemo(
+    () =>
+      bookings.slice(
+        (currentPage - 1) * bookingsPageSize,
+        currentPage * bookingsPageSize,
+      ),
+    [bookings, currentPage],
+  )
 
   function openReview(booking: Booking) {
     setSelectedBooking(booking)
@@ -134,7 +151,8 @@ export function BookingsTable({ bookings }: BookingsTableProps) {
             </TableHeader>
 
             <TableBody>
-              {bookings.map((booking) => {
+              {visibleBookings.length ? (
+                visibleBookings.map((booking) => {
                 const canReview =
                   booking.rawStatus === "completed" && Boolean(booking.serviceId)
 
@@ -196,11 +214,50 @@ export function BookingsTable({ bookings }: BookingsTableProps) {
                     </TableCell>
                   </TableRow>
                 )
-              })}
+                })
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={tableHeaders.length}
+                    className="px-6 py-10 text-center text-sm text-brand-muted"
+                  >
+                    No bookings found. Service appointments will appear here.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
       </Card>
+
+      <div className="mt-4 flex flex-col gap-3 text-sm text-brand-muted sm:flex-row sm:items-center sm:justify-between">
+        <p>
+          Showing {rangeStart}-{rangeEnd} of {bookings.length} bookings
+        </p>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={currentPage <= 1}
+            onClick={() => setPage(currentPage - 1)}
+          >
+            Previous
+          </Button>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={currentPage >= totalPages}
+            onClick={() => setPage(currentPage + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
 
       <Dialog
         open={Boolean(selectedBooking)}

@@ -7,6 +7,7 @@ import { ArrowLeft, CarFront } from "lucide-react"
 import { VehicleForm } from "@/components/vehicle-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { readApiResponse } from "@/lib/api-response"
 import { authenticatedFetch } from "@/lib/auth/client"
 import { appRoutes, withBasePath } from "@/lib/routes"
 import { type VehicleFormValues } from "@/lib/vehicles"
@@ -33,10 +34,11 @@ export function CreateVehiclePage() {
           primary: values.primary,
         }),
       })
-      const payload = (await response.json()) as { ok: boolean; message?: string }
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.message ?? "Unable to create vehicle")
-      }
+      await readApiResponse<{ ok: boolean; message?: string }>(
+        response,
+        "Unable to create vehicle",
+        { ok: true },
+      )
       router.push(appRoutes.vehicles)
       router.refresh()
     } catch (caught) {

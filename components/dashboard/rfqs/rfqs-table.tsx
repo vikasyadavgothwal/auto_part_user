@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { readApiResponse } from "@/lib/api-response"
 import { authenticatedFetch } from "@/lib/auth/client"
 import { appRoutes, withBasePath } from "@/lib/routes"
 import type { UserAddressRecord } from "@/lib/user-addresses"
@@ -139,14 +140,11 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
       cache: "no-store",
     })
       .then(async (response) => {
-        const payload = (await response.json()) as {
+        const payload = await readApiResponse<{
           ok: boolean
           addresses?: UserAddressRecord[]
           message?: string
-        }
-        if (!response.ok || !payload.ok) {
-          throw new Error(payload.message || "Unable to load delivery addresses")
-        }
+        }>(response, "Unable to load delivery addresses")
         if (!mounted) return
         const nextAddresses = payload.addresses ?? []
         setAddresses(nextAddresses)
@@ -195,12 +193,12 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
           body: JSON.stringify({ addressId: selectedAddressId }),
         },
       )
-      const payload = (await response.json()) as {
+      const payload = await readApiResponse<{
         ok: boolean
         order?: NonNullable<UserRfq["order"]>
         message?: string
-      }
-      if (!response.ok || !payload.ok || !payload.order) {
+      }>(response, "Unable to accept quote")
+      if (!payload.order) {
         throw new Error(payload.message || "Unable to accept quote")
       }
       onAccepted(selected.id, bidId, payload.order)

@@ -75,6 +75,8 @@ export type UserOrdersData = {
 export type UserOrderFilters = {
   status?: string;
   search?: string;
+  page?: number;
+  pageSize?: number;
 };
 
 const emptyOrdersData: UserOrdersData = {
@@ -158,13 +160,26 @@ const normalizeStatus = (status: string | undefined) => {
   return allowed.has(value as OrderStatus) ? value : "";
 };
 
+const normalizePositiveInteger = (
+  value: number | undefined,
+  fallback: number,
+) => {
+  if (!Number.isFinite(value)) return fallback;
+  return Math.max(1, Math.floor(value ?? fallback));
+};
+
 export async function getUserOrders(
   filters: UserOrderFilters = {},
 ): Promise<UserOrdersData> {
   try {
+    const page = normalizePositiveInteger(filters.page, 1);
+    const pageSize = Math.min(
+      50,
+      normalizePositiveInteger(filters.pageSize, emptyOrdersData.pagination.pageSize),
+    );
     const params = new URLSearchParams({
-      page: "1",
-      pageSize: "20",
+      page: String(page),
+      pageSize: String(pageSize),
     });
     const status = normalizeStatus(filters.status);
     if (status) params.set("status", status);

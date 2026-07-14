@@ -10,6 +10,7 @@ import { rfqSteps, type RfqPagination, type UserRfq } from "@/components/dashboa
 import { RfqsTable } from "@/components/dashboard/rfqs/rfqs-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { readApiResponse } from "@/lib/api-response"
 import { authenticatedFetch } from "@/lib/auth/client"
 import { appRoutes, withBasePath } from "@/lib/routes"
 
@@ -65,13 +66,13 @@ export function RfqsPage({
         search: query.trim(),
       })
       const response = await authenticatedFetch(withBasePath(`/api/rfqs?${params}`))
-      const payload = (await response.json()) as {
+      const payload = await readApiResponse<{
         ok: boolean
         rfqs?: UserRfq[]
         pagination?: RfqPagination
         message?: string
-      }
-      if (!response.ok || !payload.ok || !payload.rfqs || !payload.pagination) {
+      }>(response, "Unable to load RFQs")
+      if (!payload.rfqs || !payload.pagination) {
         throw new Error(payload.message || "Unable to load RFQs")
       }
       setRfqs(payload.rfqs)

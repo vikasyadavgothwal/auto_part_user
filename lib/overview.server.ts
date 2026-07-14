@@ -90,6 +90,7 @@ const shortDateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
   year: "numeric",
 })
+const overviewListLimit = 5
 
 async function getUserVehicles() {
   try {
@@ -148,7 +149,7 @@ function buildRecentOrders(
   ordersData: Awaited<ReturnType<typeof getUserOrders>>,
 ) {
   return mapUserOrders(ordersData.orders)
-    .slice(0, 5)
+    .slice(0, overviewListLimit)
     .map((order) => ({
       id: order.id,
       part: order.part,
@@ -204,7 +205,7 @@ function formatDeadline(value: string) {
 function buildActiveRfqs(rfqs: UserRfq[]) {
   return rfqs
     .filter((rfq) => rfq.status === "open")
-    .slice(0, 5)
+    .slice(0, overviewListLimit)
     .map((rfq) => ({
       id: rfq.publicId,
       part: partSummary(rfq),

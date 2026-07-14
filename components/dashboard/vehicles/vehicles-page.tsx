@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { Plus } from "lucide-react"
 
@@ -9,6 +9,7 @@ import { VehicleStats } from "@/components/dashboard/vehicles/vehicle-stats"
 import { VehiclesInfoCard } from "@/components/dashboard/vehicles/vehicles-info-card"
 import { VehiclesTable } from "@/components/dashboard/vehicles/vehicles-table"
 import { Button } from "@/components/ui/button"
+import { readApiResponse } from "@/lib/api-response"
 import { authenticatedFetch } from "@/lib/auth/client"
 import { appRoutes, withBasePath } from "@/lib/routes"
 import {
@@ -22,7 +23,23 @@ type VehiclesApiResponse = {
   ok: boolean
   vehicles?: VehicleRecord[]
   vehicle?: VehicleRecord
+  pagination?: VehiclePagination
   message?: string
+}
+
+type VehiclePagination = {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
+
+const vehiclePageSize = 10
+const emptyPagination: VehiclePagination = {
+  page: 1,
+  pageSize: vehiclePageSize,
+  total: 0,
+  totalPages: 1,
 }
 
 const vehiclePayload = (values: VehicleFormValues) => ({
@@ -40,25 +57,26 @@ export function VehiclesPage() {
   const [editVehicle, setEditVehicle] = useState<VehicleRecord | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
+  const [pagination, setPagination] = useState<VehiclePagination>(emptyPagination)
 
-  useEffect(() => {
-    void loadVehicles()
-  }, [])
-
-  async function loadVehicles() {
+  const loadVehicles = useCallback(async (page: number) => {
     setIsLoading(true)
     setError("")
     try {
       const response = await authenticatedFetch(
-        withBasePath("/api/vehicles?page=1&pageSize=50"),
+        withBasePath(`/api/vehicles?page=${page}&pageSize=${vehiclePageSize}`),
       )
-      const payload = (await response.json()) as VehiclesApiResponse
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.message ?? "Unable to load vehicles")
-      }
+      const payload = await readApiResponse<VehiclesApiResponse>(
+        response,
+        "Unable to load vehicles",
+      )
 
       let nextVehicles = payload.vehicles ?? []
-      if (!nextVehicles.length) {
+      let nextPagination = payload.pagination ?? {
+        ...emptyPagination,
+        page,
+      }
+      if (!nextVehicles.length && nextPagination.total === 0 && page === 1) {
         const localVehicles = readVehiclesFromStorage({ includeDefaults: false })
         if (localVehicles.length) {
           await Promise.all(
@@ -71,26 +89,43 @@ export function VehiclesPage() {
             ),
           )
           const migratedResponse = await authenticatedFetch(
-            withBasePath("/api/vehicles?page=1&pageSize=50"),
+            withBasePath(`/api/vehicles?page=1&pageSize=${vehiclePageSize}`),
           )
-          const migratedPayload = (await migratedResponse.json()) as VehiclesApiResponse
-          if (migratedResponse.ok && migratedPayload.ok) {
-            nextVehicles = migratedPayload.vehicles ?? []
-          }
+          const migratedPayload = await readApiResponse<VehiclesApiResponse>(
+            migratedResponse,
+            "Unable to load migrated vehicles",
+          )
+          nextVehicles = migratedPayload.vehicles ?? []
+          nextPagination = migratedPayload.pagination ?? nextPagination
         }
       }
       setVehicles(nextVehicles)
+      setPagination(nextPagination)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to load vehicles")
+      setVehicles([])
+      setPagination(emptyPagination)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
-  const totalVehicles = vehicles.length
+  useEffect(() => {
+    const initialLoad = window.setTimeout(() => {
+      void loadVehicles(1)
+    }, 0)
+
+    return () => window.clearTimeout(initialLoad)
+  }, [loadVehicles])
+
+  const totalVehicles = pagination.total
   const activeVehicles = vehicles.filter(
     (vehicle) => vehicle.status === "Active"
   ).length
+  const rangeStart = totalVehicles
+    ? (pagination.page - 1) * pagination.pageSize + 1
+    : 0
+  const rangeEnd = Math.min(pagination.page * pagination.pageSize, totalVehicles)
 
   const stats = [
     {
@@ -100,15 +135,15 @@ export function VehiclesPage() {
     },
     {
       id: 2,
-      title: "Recent Orders",
-      value: 12,
-      subtitle: "Across all veicle",
+      title: "Shown on Page",
+      value: vehicles.length,
+      subtitle: `Page ${pagination.page} of ${pagination.totalPages}`,
     },
     {
       id: 3,
-      title: "Active RFQs",
+      title: "Active Vehicles",
       value: String(activeVehicles),
-      subtitle: "Find your veicles",
+      subtitle: "On this page",
     },
   ]
 
@@ -130,12 +165,13 @@ export function VehiclesPage() {
           body: JSON.stringify(vehiclePayload(values)),
         },
       )
-      const payload = (await response.json()) as VehiclesApiResponse
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.message ?? "Unable to save vehicle")
-      }
+      await readApiResponse<VehiclesApiResponse>(
+        response,
+        "Unable to save vehicle",
+        { ok: true },
+      )
       setEditVehicle(null)
-      await loadVehicles()
+      await loadVehicles(pagination.page)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to save vehicle")
     }
@@ -160,14 +196,19 @@ export function VehiclesPage() {
         withBasePath(`/api/vehicles/${vehicleId}`),
         { method: "DELETE" },
       )
-      const payload = (await response.json()) as VehiclesApiResponse
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.message ?? "Unable to delete vehicle")
-      }
+      await readApiResponse<VehiclesApiResponse>(
+        response,
+        "Unable to delete vehicle",
+        { ok: true },
+      )
       if (editVehicle?.id === vehicleId) {
         setEditVehicle(null)
       }
-      await loadVehicles()
+      const nextPage =
+        vehicles.length === 1 && pagination.page > 1
+          ? pagination.page - 1
+          : pagination.page
+      await loadVehicles(nextPage)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to delete vehicle")
     }
@@ -213,6 +254,34 @@ export function VehiclesPage() {
           onEditVehicle={handleEditVehicle}
           onDeleteVehicle={handleDeleteVehicle}
         />
+        <div className="flex flex-col gap-3 text-sm text-brand-muted sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            Showing {rangeStart}-{rangeEnd} of {totalVehicles} vehicles
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isLoading || pagination.page <= 1}
+              onClick={() => void loadVehicles(pagination.page - 1)}
+            >
+              Previous
+            </Button>
+            <span>
+              Page {pagination.page} of {pagination.totalPages}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isLoading || pagination.page >= pagination.totalPages}
+              onClick={() => void loadVehicles(pagination.page + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
         <VehiclesInfoCard />
       </div>
 
