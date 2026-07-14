@@ -1,74 +1,118 @@
-import { Package, Trash2 } from "lucide-react"
+"use client"
+
+import { ExternalLink, Package, Trash2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-
-type SavedPart = {
-  brand: string
-  title: string
-  fit: string
-  price: string
-  actionLabel: string
-  inStock: boolean
-  stockLabel: string
-}
+import { authenticatedFetch } from "@/lib/auth/client"
+import { withBasePath } from "@/lib/routes"
+import {
+  formatSavedPartPrice,
+  productUrl,
+  type SavedPartRecord,
+} from "@/lib/saved-parts"
 
 type SavedPartsGridProps = {
-  parts: SavedPart[]
+  parts: SavedPartRecord[]
+  onRemove: (partUid: string) => void
 }
 
-export function SavedPartsGrid({ parts }: SavedPartsGridProps) {
+export function SavedPartsGrid({ parts, onRemove }: SavedPartsGridProps) {
+  const removePart = async (partUid: string) => {
+    const response = await authenticatedFetch(withBasePath("/api/saved-parts"), {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ partUid }),
+    })
+    if (response.ok) {
+      onRemove(partUid)
+    }
+  }
+
+  if (parts.length === 0) {
+    return (
+      <Card className="rounded-sm border border-border bg-brand-panel">
+        <CardContent className="p-10 text-center">
+          <Package className="mx-auto mb-4 h-12 w-12 text-brand-muted" />
+          <h2 className="text-xl font-semibold text-foreground">
+            No saved parts yet
+          </h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-brand-muted">
+            Save products from the main website and they will appear here.
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
       {parts.map((part) => (
         <Card
-          key={`${part.brand}-${part.title}`}
+          key={part.partUid}
           className="group overflow-hidden rounded-sm border border-border bg-brand-panel transition-all hover:border-primary"
         >
           <div className="relative flex aspect-square items-center justify-center bg-brand-panel-strong">
-            <Package className="h-16 w-16 text-brand-muted" />
+            {part.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={part.image}
+                alt={part.title}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <Package className="h-16 w-16 text-brand-muted" />
+            )}
 
             <button
               type="button"
-              className="absolute right-3 top-3 rounded-sm bg-background/50 p-2 backdrop-blur-sm transition-all hover:bg-primary"
+              onClick={() => void removePart(part.partUid)}
+              className="absolute right-3 top-3 rounded-sm bg-background/70 p-2 backdrop-blur-sm transition-all hover:bg-primary"
+              aria-label={`Remove ${part.title} from saved parts`}
             >
               <Trash2 className="h-4 w-4 text-foreground" />
             </button>
 
-            {!part.inStock ? (
+            {part.totalStock <= 0 ? (
               <Badge className="absolute bottom-3 left-3 rounded-full border border-brand-warning/20 bg-brand-warning/10 px-3 py-1 text-xs font-medium text-brand-warning hover:bg-brand-warning/10">
-                {part.stockLabel}
+                Out of Stock
               </Badge>
             ) : null}
           </div>
 
           <CardContent className="p-4">
-            <div className="mb-1 text-xs text-brand-muted">{part.brand}</div>
+            <div className="mb-1 text-xs text-brand-muted">
+              {part.brandName || part.category || "AutoPartsPro"}
+            </div>
 
             <h3 className="mb-2 line-clamp-2 font-semibold text-foreground">
               {part.title}
             </h3>
 
-            <div className="mb-3 text-xs text-brand-muted">{part.fit}</div>
+            <div className="mb-3 text-xs text-brand-muted">
+              {part.partNumber ? `Part # ${part.partNumber}` : "Marketplace part"}
+            </div>
+
+            <div className="mb-4 flex flex-wrap gap-2 text-xs text-brand-muted">
+              <span>{part.offerCount} verified offer{part.offerCount === 1 ? "" : "s"}</span>
+              <span>{part.totalStock} in stock</span>
+            </div>
 
             <div className="flex items-center justify-between gap-3">
               <div className="text-2xl font-bold text-primary">
-                {part.price}
+                {formatSavedPartPrice(part)}
               </div>
 
-              {part.inStock ? (
-                <Button className="rounded-sm bg-primary px-4 py-2 text-sm text-foreground hover:bg-brand-primary-hover">
-                  {part.actionLabel}
-                </Button>
-              ) : (
-                <Button
-                  disabled
-                  className="cursor-not-allowed rounded-sm bg-brand-panel-strong px-4 py-2 text-sm text-brand-muted hover:bg-brand-panel-strong"
-                >
-                  {part.actionLabel}
-                </Button>
-              )}
+              <Button
+                asChild
+                className="rounded-sm bg-primary px-4 py-2 text-sm text-foreground hover:bg-brand-primary-hover"
+              >
+                <a href={productUrl(part.partUid)}>
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  View
+                </a>
+              </Button>
             </div>
           </CardContent>
         </Card>

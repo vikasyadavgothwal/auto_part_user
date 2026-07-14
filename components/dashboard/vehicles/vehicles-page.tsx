@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client"
 
 import { useEffect, useState } from "react"
@@ -10,29 +9,82 @@ import { VehicleStats } from "@/components/dashboard/vehicles/vehicle-stats"
 import { VehiclesInfoCard } from "@/components/dashboard/vehicles/vehicles-info-card"
 import { VehiclesTable } from "@/components/dashboard/vehicles/vehicles-table"
 import { Button } from "@/components/ui/button"
-import { appRoutes } from "@/lib/routes"
+import { authenticatedFetch } from "@/lib/auth/client"
+import { appRoutes, withBasePath } from "@/lib/routes"
 import {
-  getDefaultVehicles,
   getVehicleDisplayName,
   readVehiclesFromStorage,
-  removeVehicle,
   type VehicleFormValues,
   type VehicleRecord,
-  upsertVehicle,
-  writeVehiclesToStorage,
 } from "@/lib/vehicles"
 
+type VehiclesApiResponse = {
+  ok: boolean
+  vehicles?: VehicleRecord[]
+  vehicle?: VehicleRecord
+  message?: string
+}
+
+const vehiclePayload = (values: VehicleFormValues) => ({
+  year: values.year,
+  make: values.make,
+  model: values.model,
+  vin: values.vin,
+  mileage: values.mileage,
+  status: values.status,
+  primary: values.primary,
+})
+
 export function VehiclesPage() {
-  const [vehicles, setVehicles] = useState<VehicleRecord[]>(getDefaultVehicles)
+  const [vehicles, setVehicles] = useState<VehicleRecord[]>([])
   const [editVehicle, setEditVehicle] = useState<VehicleRecord | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState("")
 
   useEffect(() => {
-    setVehicles(readVehiclesFromStorage())
+    void loadVehicles()
   }, [])
 
-  function persistVehicles(nextVehicles: VehicleRecord[]) {
-    setVehicles(nextVehicles)
-    writeVehiclesToStorage(nextVehicles)
+  async function loadVehicles() {
+    setIsLoading(true)
+    setError("")
+    try {
+      const response = await authenticatedFetch(
+        withBasePath("/api/vehicles?page=1&pageSize=50"),
+      )
+      const payload = (await response.json()) as VehiclesApiResponse
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.message ?? "Unable to load vehicles")
+      }
+
+      let nextVehicles = payload.vehicles ?? []
+      if (!nextVehicles.length) {
+        const localVehicles = readVehiclesFromStorage({ includeDefaults: false })
+        if (localVehicles.length) {
+          await Promise.all(
+            localVehicles.map((vehicle) =>
+              authenticatedFetch(withBasePath("/api/vehicles"), {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify(vehiclePayload(vehicle)),
+              }),
+            ),
+          )
+          const migratedResponse = await authenticatedFetch(
+            withBasePath("/api/vehicles?page=1&pageSize=50"),
+          )
+          const migratedPayload = (await migratedResponse.json()) as VehiclesApiResponse
+          if (migratedResponse.ok && migratedPayload.ok) {
+            nextVehicles = migratedPayload.vehicles ?? []
+          }
+        }
+      }
+      setVehicles(nextVehicles)
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unable to load vehicles")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const totalVehicles = vehicles.length
@@ -64,20 +116,32 @@ export function VehiclesPage() {
     setEditVehicle(vehicle)
   }
 
-  function handleEditSubmit(values: VehicleFormValues) {
+  async function handleEditSubmit(values: VehicleFormValues) {
     if (!editVehicle) {
       return
     }
-    persistVehicles(
-      upsertVehicle(vehicles, {
-        id: editVehicle.id,
-        ...values,
-      })
-    )
-    setEditVehicle(null)
+    setError("")
+    try {
+      const response = await authenticatedFetch(
+        withBasePath(`/api/vehicles/${editVehicle.id}`),
+        {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(vehiclePayload(values)),
+        },
+      )
+      const payload = (await response.json()) as VehiclesApiResponse
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.message ?? "Unable to save vehicle")
+      }
+      setEditVehicle(null)
+      await loadVehicles()
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unable to save vehicle")
+    }
   }
 
-  function handleDeleteVehicle(vehicleId: string) {
+  async function handleDeleteVehicle(vehicleId: string) {
     const vehicleToDelete = vehicles.find(
       (vehicle) => vehicle.id === vehicleId
     )
@@ -90,9 +154,22 @@ export function VehiclesPage() {
     if (!confirmed) {
       return
     }
-    persistVehicles(removeVehicle(vehicles, vehicleId))
-    if (editVehicle?.id === vehicleId) {
-      setEditVehicle(null)
+    setError("")
+    try {
+      const response = await authenticatedFetch(
+        withBasePath(`/api/vehicles/${vehicleId}`),
+        { method: "DELETE" },
+      )
+      const payload = (await response.json()) as VehiclesApiResponse
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.message ?? "Unable to delete vehicle")
+      }
+      if (editVehicle?.id === vehicleId) {
+        setEditVehicle(null)
+      }
+      await loadVehicles()
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unable to delete vehicle")
     }
   }
 
@@ -121,6 +198,16 @@ export function VehiclesPage() {
         </div>
 
         <VehicleStats stats={stats} />
+        {error ? (
+          <p className="rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </p>
+        ) : null}
+        {isLoading ? (
+          <p className="rounded-sm border border-border bg-brand-panel p-6 text-sm text-brand-muted">
+            Loading vehicles...
+          </p>
+        ) : null}
         <VehiclesTable
           vehicles={vehicles}
           onEditVehicle={handleEditVehicle}

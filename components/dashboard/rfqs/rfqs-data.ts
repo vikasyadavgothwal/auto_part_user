@@ -2,6 +2,7 @@ export type UserRfqBid = {
   id: string
   totalAmount: number
   deliveryDays: number
+  partType: string
   validUntil: string | null
   notes: string | null
   status: "submitted" | "accepted" | "rejected" | "withdrawn"

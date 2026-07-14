@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { appRoutes } from "@/lib/routes"
 
 type RecentOrder = {
   id: string
@@ -33,7 +34,7 @@ export function RecentOrdersSection({ orders }: RecentOrdersSectionProps) {
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-foreground">Recent Orders</h2>
         <Link
-          href="/dashboard/buyer/orders"
+          href={appRoutes.orders}
           className="text-sm font-medium text-primary transition-colors hover:text-brand-primary-hover"
         >
           View All
@@ -42,7 +43,7 @@ export function RecentOrdersSection({ orders }: RecentOrdersSectionProps) {
 
       <Card className="overflow-hidden rounded-sm border border-border bg-brand-panel py-0">
         <div className="overflow-x-auto">
-          <Table >
+          <Table>
             <TableHeader>
               <TableRow className="border-b border-border bg-brand-surface hover:bg-brand-surface">
                 {tableHeaders.map((header) => (
@@ -57,37 +58,49 @@ export function RecentOrdersSection({ orders }: RecentOrdersSectionProps) {
             </TableHeader>
 
             <TableBody>
-              {orders.map((order) => (
-                <TableRow
-                  key={order.id}
-                  className="cursor-pointer border-b border-border transition-colors hover:bg-brand-panel-strong"
-                >
-                  <TableCell className="px-6 py-4 text-sm text-brand-muted">
-                    {order.id}
-                  </TableCell>
-                  <TableCell className="px-6 py-4 text-sm text-brand-muted">
-                    {order.part}
-                  </TableCell>
-                  <TableCell className="px-6 py-4 text-sm text-brand-muted">
-                    {order.vehicle}
-                  </TableCell>
-                  <TableCell className="px-6 py-4 text-sm text-brand-muted">
-                    <Badge
-                      className={`rounded-full border px-3 py-1 text-xs font-medium ${order.statusClass}`}
-                    >
-                      {order.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="px-6 py-4 text-sm text-brand-muted">
-                    {order.date}
-                  </TableCell>
-                  <TableCell className="px-6 py-4 text-sm text-brand-muted">
-                    <span className="font-semibold text-foreground">
-                      {order.total}
-                    </span>
+              {orders.length ? (
+                orders.map((order) => (
+                  <TableRow
+                    key={order.id}
+                    className="cursor-pointer border-b border-border transition-colors hover:bg-brand-panel-strong"
+                  >
+                    <TableCell className="px-6 py-4 text-sm text-brand-muted">
+                      {order.id}
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-brand-muted">
+                      {order.part}
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-brand-muted">
+                      {order.vehicle}
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-brand-muted">
+                      <Badge
+                        className={`rounded-full border px-3 py-1 text-xs font-medium ${order.statusClass}`}
+                      >
+                        {order.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-brand-muted">
+                      {order.date}
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-brand-muted">
+                      <span className="font-semibold text-foreground">
+                        {order.total}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={tableHeaders.length}
+                    className="px-6 py-10 text-center text-sm text-brand-muted"
+                  >
+                    No orders yet. Product checkout and accepted RFQ orders will
+                    appear here.
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </div>

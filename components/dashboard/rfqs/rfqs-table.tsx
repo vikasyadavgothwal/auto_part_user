@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import Link from "next/link"
+import { useEffect, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,7 +23,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { authenticatedFetch } from "@/lib/auth/client"
-import { withBasePath } from "@/lib/routes"
+import { appRoutes, withBasePath } from "@/lib/routes"
+import type { UserAddressRecord } from "@/lib/user-addresses"
 import type { UserRfq } from "./rfqs-data"
 
 type RfqsTableProps = {
@@ -88,22 +90,110 @@ const expiryLabel = (rfq: UserRfq) => {
   return `${days} day${days === 1 ? "" : "s"}`
 }
 
+const addressOptionLabel = (address: UserAddressRecord) =>
+  `${address.label}${address.isDefault ? " (Default)" : ""} - ${address.city}, ${address.postalCode}`
+
+const addressSummary = (address: UserAddressRecord) =>
+  [
+    address.recipientName,
+    address.phone,
+    address.addressLine1,
+    address.addressLine2,
+    address.landmark,
+    address.city,
+    address.state,
+    address.postalCode,
+    address.country,
+  ]
+    .filter(Boolean)
+    .join(", ")
+
 export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [confirmBidId, setConfirmBidId] = useState<string | null>(null)
   const [accepting, setAccepting] = useState<string | null>(null)
+  const [addresses, setAddresses] = useState<UserAddressRecord[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState("")
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(false)
   const [error, setError] = useState("")
   const selected = rfqs.find((rfq) => rfq.id === selectedId) ?? null
   const confirmBid = selected?.bids.find((bid) => bid.id === confirmBidId) ?? null
+  const selectedAddress = addresses.find((address) => address.id === selectedAddressId) ?? null
+  const shouldLoadAddresses = Boolean(selected && !selected.order && selected.status === "open")
+
+  const openRfq = (rfq: UserRfq) => {
+    setSelectedId(rfq.id)
+    setConfirmBidId(null)
+    setAddresses([])
+    setSelectedAddressId("")
+    setIsLoadingAddresses(!rfq.order && rfq.status === "open")
+    setError("")
+  }
+
+  useEffect(() => {
+    if (!shouldLoadAddresses) return
+
+    let mounted = true
+    authenticatedFetch(withBasePath("/api/addresses"), {
+      method: "GET",
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        const payload = (await response.json()) as {
+          ok: boolean
+          addresses?: UserAddressRecord[]
+          message?: string
+        }
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.message || "Unable to load delivery addresses")
+        }
+        if (!mounted) return
+        const nextAddresses = payload.addresses ?? []
+        setAddresses(nextAddresses)
+        setSelectedAddressId(
+          (current) =>
+            (current && nextAddresses.some((address) => address.id === current)
+              ? current
+              : "") ||
+            nextAddresses.find((address) => address.isDefault)?.id ||
+            nextAddresses[0]?.id ||
+            "",
+        )
+      })
+      .catch((caught) => {
+        if (mounted) {
+          setError(
+            caught instanceof Error
+              ? caught.message
+              : "Unable to load delivery addresses",
+          )
+        }
+      })
+      .finally(() => {
+        if (mounted) setIsLoadingAddresses(false)
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [selectedId, shouldLoadAddresses])
 
   async function acceptBid(bidId: string) {
     if (!selected) return
+    if (!selectedAddressId) {
+      setError("Select a delivery address before creating an order")
+      return
+    }
     setAccepting(bidId)
     setError("")
     try {
       const response = await authenticatedFetch(
         withBasePath(`/api/rfqs/${selected.id}/bids/${bidId}/accept`),
-        { method: "POST" },
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ addressId: selectedAddressId }),
+        },
       )
       const payload = (await response.json()) as {
         ok: boolean
@@ -115,12 +205,64 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
       }
       onAccepted(selected.id, bidId, payload.order)
       setConfirmBidId(null)
+      setSelectedAddressId("")
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to accept quote")
     } finally {
       setAccepting(null)
     }
   }
+
+  const renderAddressSelector = (inputId: string) => (
+    <div className="space-y-2 rounded-sm border border-border bg-brand-surface p-4 text-sm">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <label htmlFor={inputId} className="font-medium text-foreground">
+          Delivery address
+        </label>
+        <Link
+          href={withBasePath(appRoutes.settings)}
+          className="text-xs font-medium text-primary hover:text-brand-primary-hover"
+        >
+          Manage addresses
+        </Link>
+      </div>
+      {isLoadingAddresses ? (
+        <p className="text-brand-muted">Loading saved addresses...</p>
+      ) : addresses.length ? (
+        <>
+          <select
+            id={inputId}
+            value={selectedAddressId}
+            onChange={(event) => setSelectedAddressId(event.target.value)}
+            className="h-11 w-full rounded-sm border border-border bg-background px-3 text-foreground outline-none focus-visible:border-primary"
+          >
+            <option value="">Select delivery address</option>
+            {addresses.map((address) => (
+              <option key={address.id} value={address.id}>
+                {addressOptionLabel(address)}
+              </option>
+            ))}
+          </select>
+          {selectedAddress ? (
+            <p className="break-words text-xs leading-5 text-brand-muted">
+              {addressSummary(selectedAddress)}
+            </p>
+          ) : null}
+        </>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-brand-muted">
+            Add a saved delivery address before creating an order.
+          </p>
+          <Link href={withBasePath(appRoutes.settings)}>
+            <Button type="button" variant="outline">
+              Add address in Settings
+            </Button>
+          </Link>
+        </div>
+      )}
+    </div>
+  )
 
   return (
     <>
@@ -186,10 +328,7 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
                       <Button
                         size="sm"
                         className="bg-primary text-primary-foreground hover:bg-brand-primary-hover"
-                        onClick={() => {
-                          setSelectedId(rfq.id)
-                          setError("")
-                        }}
+                        onClick={() => openRfq(rfq)}
                       >
                         {rfq.order ? "View" : "View Quotes"}
                       </Button>
@@ -212,7 +351,19 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
         </div>
       </Card>
 
-      <Dialog open={Boolean(selected)} onOpenChange={(open) => !open && setSelectedId(null)}>
+      <Dialog
+        open={Boolean(selected)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedId(null)
+            setConfirmBidId(null)
+            setAddresses([])
+            setSelectedAddressId("")
+            setIsLoadingAddresses(false)
+            setError("")
+          }
+        }}
+      >
         <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle className="text-xl">
@@ -232,14 +383,6 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
                 <p>
                   <span className="text-brand-muted">VIN:</span>{" "}
                   {selected.vehicleVin || "-"}
-                </p>
-                <p>
-                  <span className="text-brand-muted">Delivery:</span>{" "}
-                  {selected.deliveryRequirement}
-                </p>
-                <p>
-                  <span className="text-brand-muted">Payment:</span>{" "}
-                  {selected.paymentTerms}
                 </p>
                 <p>
                   <span className="text-brand-muted">Deadline:</span>{" "}
@@ -281,6 +424,10 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
                 </div>
               </div>
 
+              {!selected.order && selected.status === "open"
+                ? renderAddressSelector("user-rfq-order-address")
+                : null}
+
               <div>
                 <h3 className="mb-3 font-semibold text-foreground">
                   Supplier quotations ({selected.bids.length})
@@ -299,6 +446,7 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
                         <div>
                           <p className="font-semibold text-foreground">{supplierName(bid)}</p>
                           <p className="mt-1 text-sm text-brand-muted">
+                            Part type: {bid.partType || "New"} ·{" "}
                             Delivery in {bid.deliveryDays} days
                             {bid.notes ? ` · ${bid.notes}` : ""}
                           </p>
@@ -349,19 +497,26 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
             </DialogDescription>
           </DialogHeader>
           {confirmBid ? (
-            <div className="space-y-3 rounded-sm border border-border bg-brand-surface p-4 text-sm">
-              <div className="flex justify-between gap-4">
-                <span className="text-brand-muted">Supplier</span>
-                <span className="text-right font-medium">{supplierName(confirmBid)}</span>
+            <div className="space-y-4">
+              <div className="space-y-3 rounded-sm border border-border bg-brand-surface p-4 text-sm">
+                <div className="flex justify-between gap-4">
+                  <span className="text-brand-muted">Supplier</span>
+                  <span className="text-right font-medium">{supplierName(confirmBid)}</span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-brand-muted">Total quote</span>
+                  <strong>{money(confirmBid.totalAmount)}</strong>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-brand-muted">Part type</span>
+                  <span>{confirmBid.partType || "New"}</span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-brand-muted">Delivery</span>
+                  <span>{confirmBid.deliveryDays} days</span>
+                </div>
               </div>
-              <div className="flex justify-between gap-4">
-                <span className="text-brand-muted">Total quote</span>
-                <strong>{money(confirmBid.totalAmount)}</strong>
-              </div>
-              <div className="flex justify-between gap-4">
-                <span className="text-brand-muted">Delivery</span>
-                <span>{confirmBid.deliveryDays} days</span>
-              </div>
+              {renderAddressSelector("user-confirm-order-address")}
             </div>
           ) : null}
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
@@ -374,7 +529,7 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
               Cancel
             </Button>
             <Button
-              disabled={!confirmBid || Boolean(accepting)}
+              disabled={!confirmBid || Boolean(accepting) || !selectedAddressId}
               onClick={() => confirmBid && void acceptBid(confirmBid.id)}
               className="bg-primary text-primary-foreground hover:bg-brand-primary-hover"
             >

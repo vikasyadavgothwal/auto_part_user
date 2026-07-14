@@ -128,22 +128,25 @@ export function getDefaultVehicles() {
   return defaultVehicles.map((vehicle) => ({ ...vehicle }))
 }
 
-export function readVehiclesFromStorage() {
+export function readVehiclesFromStorage(
+  options: { includeDefaults?: boolean } = {},
+) {
+  const includeDefaults = options.includeDefaults ?? true
   if (typeof window === "undefined") {
-    return getDefaultVehicles()
+    return includeDefaults ? getDefaultVehicles() : []
   }
 
   try {
     const storedVehicles = window.localStorage.getItem(VEHICLE_STORAGE_KEY)
 
     if (!storedVehicles) {
-      return getDefaultVehicles()
+      return includeDefaults ? getDefaultVehicles() : []
     }
 
     const parsedVehicles = JSON.parse(storedVehicles)
 
     if (!Array.isArray(parsedVehicles)) {
-      return getDefaultVehicles()
+      return includeDefaults ? getDefaultVehicles() : []
     }
 
     const normalizedVehicles = parsedVehicles
@@ -152,9 +155,11 @@ export function readVehiclesFromStorage() {
 
     return normalizedVehicles.length
       ? ensurePrimaryVehicle(normalizedVehicles)
-      : getDefaultVehicles()
+      : includeDefaults
+        ? getDefaultVehicles()
+        : []
   } catch {
-    return getDefaultVehicles()
+    return includeDefaults ? getDefaultVehicles() : []
   }
 }
 

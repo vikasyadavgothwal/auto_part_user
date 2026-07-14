@@ -1,15 +1,17 @@
-import { Funnel } from "lucide-react"
+import { Funnel } from "lucide-react";
+import Link from "next/link";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 
 type OrderFilter = {
-  label: string
-  active: boolean
-}
+  label: string;
+  active: boolean;
+  href: string;
+};
 
 type OrderFiltersProps = {
-  filters: OrderFilter[]
-}
+  filters: OrderFilter[];
+};
 
 export function OrderFilters({ filters }: OrderFiltersProps) {
   return (
@@ -23,6 +25,7 @@ export function OrderFilters({ filters }: OrderFiltersProps) {
         {filters.map((filter) => (
           <Button
             key={filter.label}
+            asChild
             variant="outline"
             className={
               filter.active
@@ -30,10 +33,10 @@ export function OrderFilters({ filters }: OrderFiltersProps) {
                 : "rounded-sm border-border bg-brand-panel text-brand-muted hover:border-primary hover:bg-brand-panel hover:text-brand-muted"
             }
           >
-            {filter.label}
+            <Link href={filter.href}>{filter.label}</Link>
           </Button>
         ))}
       </div>
     </div>
-  )
+  );
 }

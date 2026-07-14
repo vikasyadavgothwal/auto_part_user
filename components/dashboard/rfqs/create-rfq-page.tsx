@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
@@ -14,7 +13,6 @@ import type { DashboardUser } from "@/lib/auth/types"
 import { appRoutes, withBasePath } from "@/lib/routes"
 import {
   getVehicleDisplayName,
-  readVehiclesFromStorage,
   type VehicleRecord,
 } from "@/lib/vehicles"
 
@@ -37,6 +35,12 @@ type VehicleDetails = {
   vin: string
 }
 
+type VehiclesApiResponse = {
+  ok: boolean
+  vehicles?: VehicleRecord[]
+  message?: string
+}
+
 const newPart = (id: number): PartItem => ({
   id,
   partName: "",
@@ -50,6 +54,15 @@ const defaultDeadline = () => {
   const date = new Date()
   date.setDate(date.getDate() + 7)
   return date.toISOString().slice(0, 10)
+}
+
+const digitsOnly = (value: string) => value.replace(/\D/g, "")
+
+const decimalOnly = (value: string) => {
+  const normalized = value.replace(/[^\d.]/g, "")
+  if (!/\d/.test(normalized)) return ""
+  const [whole, ...decimalParts] = normalized.split(".")
+  return decimalParts.length ? `${whole}.${decimalParts.join("").slice(0, 2)}` : whole
 }
 
 const userName = (user: DashboardUser) =>
@@ -74,8 +87,8 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
   const [projectName, setProjectName] = useState("Parts request")
   const [description, setDescription] = useState("")
   const [deadline, setDeadline] = useState(defaultDeadline)
-  const [deliveryRequirement, setDeliveryRequirement] = useState("Standard Delivery")
-  const [paymentTerms, setPaymentTerms] = useState("Due on Receipt")
+  const deliveryRequirement = "Standard Delivery"
+  const paymentTerms = "Due on Receipt"
   const [companyName, setCompanyName] = useState(user.companyName || userName(user))
   const [contactName, setContactName] = useState(userName(user))
   const [email, setEmail] = useState(user.email || "")
@@ -85,19 +98,29 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
-    const savedVehicles = readVehiclesFromStorage()
-    setVehicles(savedVehicles)
-    const primaryVehicle = savedVehicles.find((item) => item.primary) ?? savedVehicles[0]
-    if (primaryVehicle) {
-      setSelectedVehicleId(primaryVehicle.id)
-      setVehicle({
-        year: primaryVehicle.year,
-        make: primaryVehicle.make,
-        model: primaryVehicle.model,
-        trim: "",
-        vin: primaryVehicle.vin,
+    authenticatedFetch(withBasePath("/api/vehicles?page=1&pageSize=50"))
+      .then(async (response) => {
+        const payload = (await response.json()) as VehiclesApiResponse
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.message ?? "Unable to load vehicles")
+        }
+        const savedVehicles = payload.vehicles ?? []
+        setVehicles(savedVehicles)
+        const primaryVehicle = savedVehicles.find((item) => item.primary) ?? savedVehicles[0]
+        if (primaryVehicle) {
+          setSelectedVehicleId(primaryVehicle.id)
+          setVehicle({
+            year: primaryVehicle.year,
+            make: primaryVehicle.make,
+            model: primaryVehicle.model,
+            trim: "",
+            vin: primaryVehicle.vin,
+          })
+        }
       })
-    }
+      .catch((caught) => {
+        setSubmitError(caught instanceof Error ? caught.message : "Unable to load vehicles")
+      })
   }, [])
 
   const totalQuantity = useMemo(
@@ -164,6 +187,7 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
     try {
       const payload = {
         source: "user",
+        userVehicleId: selectedVehicleId || undefined,
         projectName,
         description,
         responseDeadline: new Date(`${deadline}T23:59:59`).toISOString(),
@@ -299,11 +323,16 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
                     <label className="space-y-2">
                       <Label>Quantity *</Label>
                       <Input
-                        type="number"
-                        min={1}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={part.quantity}
                         onChange={(event) =>
-                          updatePart(part.id, "quantity", Number(event.target.value) || 1)
+                          updatePart(
+                            part.id,
+                            "quantity",
+                            Number(digitsOnly(event.target.value)) || 1,
+                          )
                         }
                         className="h-10 border-border bg-brand-panel"
                       />
@@ -311,8 +340,11 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
                     <label className="space-y-2">
                       <Label>Target Price</Label>
                       <Input
+                        inputMode="decimal"
                         value={part.targetPrice}
-                        onChange={(event) => updatePart(part.id, "targetPrice", event.target.value)}
+                        onChange={(event) =>
+                          updatePart(part.id, "targetPrice", decimalOnly(event.target.value))
+                        }
                         placeholder="125"
                         className="h-10 border-border bg-brand-panel"
                       />
@@ -432,32 +464,6 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
                   }
                   className="h-10 border-border bg-brand-surface uppercase"
                 />
-              </label>
-              <label className="space-y-2">
-                <Label>Delivery Requirement</Label>
-                <select
-                  value={deliveryRequirement}
-                  onChange={(event) => setDeliveryRequirement(event.target.value)}
-                  className="h-10 w-full rounded-sm border border-border bg-brand-surface px-3 text-sm text-foreground outline-none focus-visible:border-primary"
-                >
-                  <option>Standard Delivery</option>
-                  <option>Express Delivery</option>
-                  <option>Next Day Delivery</option>
-                  <option>Same Day Delivery</option>
-                </select>
-              </label>
-              <label className="space-y-2">
-                <Label>Payment Terms</Label>
-                <select
-                  value={paymentTerms}
-                  onChange={(event) => setPaymentTerms(event.target.value)}
-                  className="h-10 w-full rounded-sm border border-border bg-brand-surface px-3 text-sm text-foreground outline-none focus-visible:border-primary"
-                >
-                  <option>Due on Receipt</option>
-                  <option>Net 15</option>
-                  <option>Net 30</option>
-                  <option>Net 60</option>
-                </select>
               </label>
               <label className="space-y-2">
                 <Label>Customer / Company *</Label>

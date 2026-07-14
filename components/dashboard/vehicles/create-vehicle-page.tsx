@@ -1,30 +1,49 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, CarFront } from "lucide-react"
 
 import { VehicleForm } from "@/components/vehicle-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { appRoutes } from "@/lib/routes"
-import {
-  createVehicleRecord,
-  readVehiclesFromStorage,
-  upsertVehicle,
-  writeVehiclesToStorage,
-  type VehicleFormValues,
-} from "@/lib/vehicles"
+import { authenticatedFetch } from "@/lib/auth/client"
+import { appRoutes, withBasePath } from "@/lib/routes"
+import { type VehicleFormValues } from "@/lib/vehicles"
 
 export function CreateVehiclePage() {
   const router = useRouter()
+  const [error, setError] = useState("")
+  const [pending, setPending] = useState(false)
 
-  function handleCreateVehicle(values: VehicleFormValues) {
-    const nextVehicles = upsertVehicle(
-      readVehiclesFromStorage(),
-      createVehicleRecord(values)
-    )
-    writeVehiclesToStorage(nextVehicles)
-    router.push(appRoutes.vehicles)
+  async function handleCreateVehicle(values: VehicleFormValues) {
+    setPending(true)
+    setError("")
+    try {
+      const response = await authenticatedFetch(withBasePath("/api/vehicles"), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          year: values.year,
+          make: values.make,
+          model: values.model,
+          vin: values.vin,
+          mileage: values.mileage,
+          status: values.status,
+          primary: values.primary,
+        }),
+      })
+      const payload = (await response.json()) as { ok: boolean; message?: string }
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.message ?? "Unable to create vehicle")
+      }
+      router.push(appRoutes.vehicles)
+      router.refresh()
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unable to create vehicle")
+    } finally {
+      setPending(false)
+    }
   }
 
   return (
@@ -57,8 +76,13 @@ export function CreateVehiclePage() {
 
       <Card className="rounded-sm border border-border bg-brand-panel shadow-none">
         <CardContent className="p-6">
+          {error ? (
+            <p className="mb-4 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              {error}
+            </p>
+          ) : null}
           <VehicleForm
-            submitLabel="Create Vehicle"
+            submitLabel={pending ? "Creating..." : "Create Vehicle"}
             onSubmit={handleCreateVehicle}
             onCancel={() => router.push(appRoutes.vehicles)}
           />
