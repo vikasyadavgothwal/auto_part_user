@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { ExternalLink, Package, Trash2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -19,14 +20,20 @@ type SavedPartsGridProps = {
 }
 
 export function SavedPartsGrid({ parts, onRemove }: SavedPartsGridProps) {
+  const [removingPartUid, setRemovingPartUid] = useState<string | null>(null)
+
   const removePart = async (partUid: string) => {
-    const response = await authenticatedFetch(withBasePath("/api/saved-parts"), {
-      method: "DELETE",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ partUid }),
-    })
-    if (response.ok) {
-      onRemove(partUid)
+    if (removingPartUid) return
+    setRemovingPartUid(partUid)
+    try {
+      const response = await authenticatedFetch(withBasePath("/api/saved-parts"), {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ partUid }),
+      })
+      if (response.ok) onRemove(partUid)
+    } finally {
+      setRemovingPartUid(null)
     }
   }
 
@@ -51,9 +58,9 @@ export function SavedPartsGrid({ parts, onRemove }: SavedPartsGridProps) {
       {parts.map((part) => (
         <Card
           key={part.partUid}
-          className="group overflow-hidden rounded-sm border border-border bg-brand-panel transition-all hover:border-primary"
+          className="group flex h-full min-w-0 flex-col overflow-hidden rounded-sm border border-border bg-brand-panel transition-all hover:border-primary"
         >
-          <div className="relative flex aspect-square items-center justify-center bg-brand-panel-strong">
+          <div className="relative flex h-56 w-full shrink-0 items-center justify-center overflow-hidden bg-brand-panel-strong sm:h-60">
             {part.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -68,10 +75,11 @@ export function SavedPartsGrid({ parts, onRemove }: SavedPartsGridProps) {
             <button
               type="button"
               onClick={() => void removePart(part.partUid)}
-              className="absolute right-3 top-3 rounded-sm bg-background/70 p-2 backdrop-blur-sm transition-all hover:bg-primary"
+              disabled={Boolean(removingPartUid)}
+              className="absolute right-3 top-3 rounded-sm bg-background/80 p-2 backdrop-blur-sm transition-all hover:bg-primary disabled:cursor-not-allowed disabled:opacity-60"
               aria-label={`Remove ${part.title} from saved parts`}
             >
-              <Trash2 className="h-4 w-4 text-foreground" />
+              <Trash2 className={removingPartUid === part.partUid ? "h-4 w-4 animate-pulse text-foreground" : "h-4 w-4 text-foreground"} />
             </button>
 
             {part.totalStock <= 0 ? (
@@ -81,7 +89,7 @@ export function SavedPartsGrid({ parts, onRemove }: SavedPartsGridProps) {
             ) : null}
           </div>
 
-          <CardContent className="p-4">
+          <CardContent className="flex flex-1 flex-col p-4">
             <div className="mb-1 text-xs text-brand-muted">
               {part.brandName || part.category || "AutoPartsPro"}
             </div>
@@ -99,7 +107,7 @@ export function SavedPartsGrid({ parts, onRemove }: SavedPartsGridProps) {
               <span>{part.totalStock} in stock</span>
             </div>
 
-            <div className="flex items-center justify-between gap-3">
+            <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-2">
               <div className="text-2xl font-bold text-primary">
                 {formatSavedPartPrice(part)}
               </div>
