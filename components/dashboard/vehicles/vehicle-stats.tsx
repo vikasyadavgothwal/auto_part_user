@@ -30,7 +30,7 @@ export function VehicleStats({ stats }: VehicleStatsProps) {
               {item.value}
             </div>
             <div className="mt-1 text-sm text-brand-muted">
-              {item.subtitle ? item.title : ""}
+              {item.subtitle ?? ""}
             </div>
           </CardContent>
         </Card>

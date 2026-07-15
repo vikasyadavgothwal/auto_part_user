@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react"
+import { Heart, type LucideIcon } from "lucide-react"
 
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -25,9 +25,13 @@ export function PartStats({ stats }: PartStatsProps) {
             className="rounded-sm border border-border bg-brand-panel"
           >
             <CardContent className="p-6">
-              {item.showIcon && Icon ? (
+              {item.showIcon ? (
                 <div className="mb-2 flex items-center gap-3">
-                  <Icon className="h-5 w-5 text-primary" />
+                  {Icon ? (
+                    <Icon className="h-5 w-5 text-primary" />
+                  ) : (
+                    <Heart className="h-5 w-5 text-primary" />
+                  )}
                   <div className="text-sm text-brand-muted">{item.title}</div>
                 </div>
               ) : (

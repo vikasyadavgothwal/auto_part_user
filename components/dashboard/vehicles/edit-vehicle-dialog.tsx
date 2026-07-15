@@ -37,6 +37,7 @@ export function EditVehicleDialog({
 
         <div className="px-6 py-5">
           <VehicleForm
+            key={vehicle?.id ?? "empty-vehicle"}
             initialValues={toVehicleFormValues(vehicle ?? undefined)}
             submitLabel="Save Changes"
             onSubmit={onSubmit}

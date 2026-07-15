@@ -10,9 +10,22 @@ import {
   popularServices,
 } from "@/components/dashboard/bookings/bookings-data"
 import { BookingsTable } from "@/components/dashboard/bookings/bookings-table"
+import type { Booking } from "@/components/dashboard/bookings/bookings-table"
 import { Button } from "@/components/ui/button"
 
-export function BookingsPage() {
+type BookingsPageProps = {
+  bookingRows?: Booking[]
+  stats?: typeof bookingStats
+  next?: typeof nextAppointment
+  services?: string[]
+}
+
+export function BookingsPage({
+  bookingRows = bookings,
+  stats = bookingStats,
+  next = nextAppointment,
+  services = popularServices,
+}: BookingsPageProps) {
   return (
     <div className="min-w-0 space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -34,11 +47,11 @@ export function BookingsPage() {
         </Button>
       </div>
 
-      <BookingStats stats={bookingStats} />
-      <BookingsTable bookings={bookings} />
+      <BookingStats stats={stats} />
+      <BookingsTable bookings={bookingRows} />
       <BookingSummaryCards
-        nextAppointment={nextAppointment}
-        popularServices={popularServices}
+        nextAppointment={next}
+        popularServices={services}
       />
     </div>
   )

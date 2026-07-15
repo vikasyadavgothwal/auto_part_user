@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { appRoutes } from "@/lib/routes"
 
 type ActiveRfq = {
   id: string
@@ -32,7 +33,7 @@ export function ActiveRfqsSection({ rfqs }: ActiveRfqsSectionProps) {
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-foreground">Active RFQs</h2>
         <Link
-          href="/dashboard/buyer/rfqs"
+          href={appRoutes.rfqs}
           className="text-sm font-medium text-primary transition-colors hover:text-brand-primary-hover"
         >
           View All
@@ -56,35 +57,46 @@ export function ActiveRfqsSection({ rfqs }: ActiveRfqsSectionProps) {
             </TableHeader>
 
             <TableBody>
-              {rfqs.map((rfq) => (
-                <TableRow
-                  key={rfq.id}
-                  className="cursor-pointer border-b border-border transition-colors hover:bg-brand-panel-strong"
-                >
-                  <TableCell className="px-6 py-4 text-sm text-brand-muted">
-                    {rfq.id}
-                  </TableCell>
-                  <TableCell className="px-6 py-4 text-sm text-brand-muted">
-                    {rfq.part}
-                  </TableCell>
-                  <TableCell className="px-6 py-4 text-sm text-brand-muted">
-                    {rfq.vehicle}
-                  </TableCell>
-                  <TableCell className="px-6 py-4 text-sm text-brand-muted">
-                    <span className="font-semibold text-primary">
-                      {rfq.quotes}
-                    </span>
-                  </TableCell>
-                  <TableCell className="px-6 py-4 text-sm text-brand-muted">
-                    <Badge className="rounded-full border border-brand-success/20 bg-brand-success/10 px-3 py-1 text-xs font-medium text-brand-success hover:bg-brand-success/10">
-                      {rfq.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="px-6 py-4 text-sm text-brand-muted">
-                    <span className="text-brand-muted">{rfq.expires}</span>
+              {rfqs.length ? (
+                rfqs.map((rfq) => (
+                  <TableRow
+                    key={rfq.id}
+                    className="cursor-pointer border-b border-border transition-colors hover:bg-brand-panel-strong"
+                  >
+                    <TableCell className="px-6 py-4 text-sm text-brand-muted">
+                      {rfq.id}
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-brand-muted">
+                      {rfq.part}
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-brand-muted">
+                      {rfq.vehicle}
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-brand-muted">
+                      <span className="font-semibold text-primary">
+                        {rfq.quotes}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-brand-muted">
+                      <Badge className="rounded-full border border-brand-success/20 bg-brand-success/10 px-3 py-1 text-xs font-medium text-brand-success hover:bg-brand-success/10">
+                        {rfq.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 text-sm text-brand-muted">
+                      <span className="text-brand-muted">{rfq.expires}</span>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={tableHeaders.length}
+                    className="px-6 py-10 text-center text-sm text-brand-muted"
+                  >
+                    No active RFQs. Create an RFQ to receive supplier quotes.
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </div>

@@ -1,0 +1,15 @@
+import { forwardBackendRequest } from "@/lib/auth/backend"
+
+export const dynamic = "force-dynamic"
+
+export async function GET(request: Request) {
+  return forwardBackendRequest(request, "/api/v1/user/saved-parts")
+}
+
+export async function POST(request: Request) {
+  return forwardBackendRequest(request, "/api/v1/user/saved-parts")
+}
+
+export async function DELETE(request: Request) {
+  return forwardBackendRequest(request, "/api/v1/user/saved-parts")
+}

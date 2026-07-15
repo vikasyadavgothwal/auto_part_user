@@ -3,17 +3,24 @@ import { Search, Truck, Wrench } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { appRoutes } from "@/lib/routes"
 
 type PrimaryVehicle = {
   title: string
   vin: string
+  mileage: string
+  status: string
 }
 
 type PrimaryVehicleCardProps = {
-  vehicle: PrimaryVehicle
+  vehicle: PrimaryVehicle | null
+  vehicleCount: number
 }
 
-export function PrimaryVehicleCard({ vehicle }: PrimaryVehicleCardProps) {
+export function PrimaryVehicleCard({
+  vehicle,
+  vehicleCount,
+}: PrimaryVehicleCardProps) {
   return (
     <Card className="rounded-sm border border-border bg-brand-panel">
       <CardContent className="p-6">
@@ -23,12 +30,14 @@ export function PrimaryVehicleCard({ vehicle }: PrimaryVehicleCardProps) {
               My Vehicle
             </h2>
             <p className="text-sm text-brand-muted">
-              Primary vehicle for parts search
+              {vehicleCount
+                ? `${vehicleCount} saved vehicle${vehicleCount === 1 ? "" : "s"}`
+                : "Add a vehicle to personalize parts and RFQs"}
             </p>
           </div>
 
           <Link
-            href="/dashboard/buyer/vehicles"
+            href={appRoutes.vehicles}
             className="text-sm font-medium text-primary transition-colors hover:text-brand-primary-hover"
           >
             Manage Vehicles
@@ -42,9 +51,16 @@ export function PrimaryVehicleCard({ vehicle }: PrimaryVehicleCardProps) {
 
           <div>
             <h3 className="mb-1 text-2xl font-bold text-foreground">
-              {vehicle.title}
+              {vehicle?.title ?? "No vehicle added yet"}
             </h3>
-            <p className="text-sm text-brand-muted">VIN: {vehicle.vin}</p>
+            <p className="text-sm text-brand-muted">
+              VIN: {vehicle?.vin ?? "Not added"}
+            </p>
+            {vehicle ? (
+              <p className="mt-1 text-sm text-brand-muted">
+                {vehicle.mileage} | {vehicle.status}
+              </p>
+            ) : null}
           </div>
         </div>
 
@@ -53,9 +69,12 @@ export function PrimaryVehicleCard({ vehicle }: PrimaryVehicleCardProps) {
             asChild
             className="h-auto rounded-sm bg-primary px-6 py-3 text-foreground hover:bg-brand-primary-hover"
           >
-            <Link href="/search" className="flex items-center justify-center gap-2">
+            <Link
+              href={vehicle ? appRoutes.createRfq : appRoutes.createVehicle}
+              className="flex items-center justify-center gap-2"
+            >
               <Search className="h-5 w-5" />
-              Search Parts
+              {vehicle ? "Request Parts" : "Add Vehicle"}
             </Link>
           </Button>
 
@@ -65,7 +84,7 @@ export function PrimaryVehicleCard({ vehicle }: PrimaryVehicleCardProps) {
             className="h-auto rounded-sm border-border bg-brand-panel-strong px-6 py-3 text-foreground hover:border-primary hover:bg-brand-panel-strong"
           >
             <Link
-              href="/services"
+              href={appRoutes.bookings}
               className="flex items-center justify-center gap-2"
             >
               <Wrench className="h-5 w-5" />
