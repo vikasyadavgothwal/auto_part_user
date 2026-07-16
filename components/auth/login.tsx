@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { FirebaseError } from "firebase/app"
-import { Eye, EyeOff, ShieldCheck, UserRound } from "lucide-react"
+import { Eye, EyeOff, ShieldCheck } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -81,37 +81,8 @@ export function LoginForm() {
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-brand-surface px-4 py-8 sm:py-10">
-      <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[1.1fr_420px]">
-        <section className="rounded-3xl border border-border bg-brand-elevated p-6 text-foreground sm:p-8 lg:p-10">
-          <div className="surface-pill mb-6 bg-primary/15 text-brand-primary-soft">
-            <UserRound className="size-4" />
-            Personal Parts Workspace
-          </div>
-          <h1 className="max-w-xl text-3xl font-semibold tracking-tight sm:text-4xl">
-            Keep vehicles, parts, RFQs, bookings, and orders in one account.
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-brand-muted">
-            Sign in with the user account created on AutoPartsPro. Other account
-            types cannot access this dashboard.
-          </p>
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            {[
-              ["Vehicles", "Manage vehicle details"],
-              ["Parts", "Save and compare products"],
-              ["Orders", "Track purchases securely"],
-            ].map(([title, description]) => (
-              <div
-                key={title}
-                className="rounded-2xl border border-border bg-brand-panel p-4"
-              >
-                <div className="font-semibold">{title}</div>
-                <p className="mt-1 text-sm text-brand-muted">{description}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <Card className="border border-border bg-brand-elevated text-foreground ring-0">
+      <div className="w-full max-w-md">
+        <Card className="border border-border bg-brand-elevated text-foreground shadow-2xl shadow-black/20 ring-0">
           <CardHeader className="space-y-2">
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-brand-panel px-3 py-1 text-xs text-brand-muted">
               <ShieldCheck className="size-3.5" />
