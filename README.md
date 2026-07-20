@@ -28,7 +28,12 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 NEXT_PUBLIC_FIREBASE_APP_ID=
+NEXT_PUBLIC_MAIN_WEBSITE_URL=https://websitedesignersdubai.ae
 ```
+
+During local development, links back to marketplace products and service
+booking use `http://localhost:3001` even if a deployed website URL is present
+in the environment. Production continues using `NEXT_PUBLIC_MAIN_WEBSITE_URL`.
 
 Use the same Firebase web application values as `auto-parts-pro-user`. If the
 Firebase values are omitted, login falls back to backend-managed email and

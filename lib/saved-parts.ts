@@ -14,9 +14,18 @@ export type SavedPartRecord = {
   savedAt: string
 }
 
-export const getMainWebsiteUrl = () =>
-  (process.env.NEXT_PUBLIC_MAIN_WEBSITE_URL?.trim() || "http://localhost:3001")
-    .replace(/\/+$/, "")
+export const getMainWebsiteUrl = () => {
+  if (process.env.NODE_ENV !== "production") {
+    return "http://localhost:3001"
+  }
+
+  const configuredUrl =
+    process.env.NEXT_PUBLIC_MAIN_WEBSITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim()
+  const fallbackUrl = "https://websitedesignersdubai.ae"
+
+  return (configuredUrl || fallbackUrl).replace(/\/+$/, "")
+}
 
 export const productUrl = (partUid: string) =>
   `${getMainWebsiteUrl()}/product/${encodeURIComponent(partUid)}`

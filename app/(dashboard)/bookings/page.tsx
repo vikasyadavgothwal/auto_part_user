@@ -1,7 +1,5 @@
 import { BookingsPage } from "@/components/dashboard/bookings/bookings-page"
 import {
-  buildNextAppointment,
-  buildPopularServices,
   buildUserBookingStats,
   getUserGarageBookings,
   mapUserGarageBookings,
@@ -16,8 +14,6 @@ export default async function MyBookingsPage() {
     <BookingsPage
       bookingRows={mapUserGarageBookings(bookings)}
       stats={buildUserBookingStats(bookings)}
-      next={buildNextAppointment(bookings)}
-      services={buildPopularServices(bookings)}
     />
   )
 }
