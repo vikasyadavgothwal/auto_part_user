@@ -7,6 +7,13 @@ export type UserRfqBid = {
   notes: string | null
   status: "submitted" | "accepted" | "rejected" | "withdrawn"
   createdAt: string
+  items: Array<{
+    id: string
+    rfqPartId: string
+    unitPrice: number
+    lineTotal: number
+    partType: string
+  }>
   supplier: {
     id: string
     companyName: string | null

@@ -362,7 +362,7 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
           }
         }}
       >
-        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-4xl">
+        <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] overflow-y-auto p-4 sm:max-h-[calc(100dvh-3rem)] sm:w-[calc(100vw-3rem)] sm:max-w-[calc(100vw-3rem)] sm:p-6 xl:max-w-7xl">
           <DialogHeader>
             <DialogTitle className="text-xl">
               {selected?.publicId}: {selected?.projectName}
@@ -432,19 +432,19 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
                 </h3>
                 {selected.bids.length === 0 ? (
                   <p className="rounded-sm border border-border p-5 text-brand-muted">
-                    No supplier quotations received yet.
+                    No supplier quotations received yet. A quotation will appear here after a supplier enters an AED price for every requested part and submits the complete quote.
                   </p>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
                     {selected.bids.map((bid) => (
                       <div
                         key={bid.id}
-                        className="flex flex-col gap-4 rounded-sm border border-border bg-brand-surface p-4 md:flex-row md:items-center md:justify-between"
+                        className="min-w-0 space-y-4 rounded-sm border border-border bg-brand-surface p-4"
                       >
-                        <div>
+                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                          <div>
                           <p className="font-semibold text-foreground">{supplierName(bid)}</p>
                           <p className="mt-1 text-sm text-brand-muted">
-                            Part type: {bid.partType || "New"} ·{" "}
                             Delivery in {bid.deliveryDays} days
                             {bid.notes ? ` · ${bid.notes}` : ""}
                           </p>
@@ -458,7 +458,7 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
                           </strong>
                           {selected.status === "open" && bid.status === "submitted" ? (
                             <Button
-                              disabled={Boolean(accepting)}
+                              disabled={Boolean(accepting) || bid.items.length !== selected.parts.length}
                               onClick={() => {
                                 setError("")
                                 setConfirmBidId(bid.id)
@@ -469,6 +469,15 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
                             </Button>
                           ) : null}
                         </div>
+                        </div>
+                        {bid.items.length === selected.parts.length ? (
+                          <div className="max-w-full overflow-x-auto rounded-sm border border-border">
+                            <table className="w-full min-w-[560px] text-sm">
+                              <thead className="bg-background text-brand-muted"><tr><th className="p-3 text-left">Quoted part</th><th className="p-3 text-left">Qty</th><th className="p-3 text-left">Condition</th><th className="p-3 text-right">Unit (AED)</th><th className="p-3 text-right">Line total (AED)</th></tr></thead>
+                              <tbody>{selected.parts.map((part) => { const item = bid.items.find((entry) => entry.rfqPartId === part.id)!; return <tr key={part.id} className="border-t border-border"><td className="p-3">{part.partName}{part.partNumber ? ` (${part.partNumber})` : ""}</td><td className="p-3">{part.quantity}</td><td className="p-3">{item.partType}</td><td className="p-3 text-right">{money(item.unitPrice)}</td><td className="p-3 text-right font-medium">{money(item.lineTotal)}</td></tr> })}</tbody>
+                            </table>
+                          </div>
+                        ) : <p className="text-sm text-destructive">This supplier must update the quote with a price for every part before it can be accepted.</p>}
                       </div>
                     ))}
                   </div>
@@ -486,7 +495,7 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
           if (!open && !accepting) setConfirmBidId(null)
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] overflow-y-auto sm:max-h-[calc(100dvh-3rem)] sm:w-[calc(100vw-3rem)] sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Accept supplier quotation?</DialogTitle>
             <DialogDescription>
@@ -505,10 +514,7 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
                   <span className="text-brand-muted">Total quote</span>
                   <strong>{money(confirmBid.totalAmount)}</strong>
                 </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-brand-muted">Part type</span>
-                  <span>{confirmBid.partType || "New"}</span>
-                </div>
+                {selected?.parts.map((part) => { const item = confirmBid.items.find((entry) => entry.rfqPartId === part.id); return item ? <div key={part.id} className="border-t border-border pt-3"><div className="flex justify-between gap-4"><span>{part.partName} × {part.quantity}</span><strong>{money(item.lineTotal)}</strong></div><p className="mt-1 text-xs text-brand-muted">{item.partType} · {money(item.unitPrice)} each</p></div> : null })}
                 <div className="flex justify-between gap-4">
                   <span className="text-brand-muted">Delivery</span>
                   <span>{confirmBid.deliveryDays} days</span>
@@ -518,7 +524,7 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
             </div>
           ) : null}
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          <DialogFooter>
+          <DialogFooter className="sticky bottom-0 -mx-6 -mb-6 border-t border-border bg-background/95 px-6 py-4 backdrop-blur">
             <Button
               variant="outline"
               disabled={Boolean(accepting)}
