@@ -46,6 +46,7 @@ export type UserRfq = {
   createdAt: string
   parts: Array<{
     id: string
+    vehicleVin: string | null
     partName: string
     partNumber: string | null
     quantity: number

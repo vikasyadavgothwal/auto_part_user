@@ -17,6 +17,12 @@ export function CreateVehiclePage() {
   const [error, setError] = useState("")
   const [pending, setPending] = useState(false)
 
+  async function lookupVin(vin: string) {
+    const response = await authenticatedFetch(withBasePath(`/api/vehicles/vin-lookup?vin=${encodeURIComponent(vin)}`))
+    const result = await readApiResponse<{ ok: boolean; found: boolean; vehicle?: { year: number; make: string; model: string }; message?: string }>(response, "Unable to look up VIN")
+    return { found: result.found, ...result.vehicle, message: result.message }
+  }
+
   async function handleCreateVehicle(values: VehicleFormValues) {
     setPending(true)
     setError("")
@@ -85,6 +91,7 @@ export function CreateVehiclePage() {
           ) : null}
           <VehicleForm
             submitLabel={pending ? "Creating..." : "Create Vehicle"}
+            onVinLookup={lookupVin}
             onSubmit={handleCreateVehicle}
             onCancel={() => router.push(appRoutes.vehicles)}
           />

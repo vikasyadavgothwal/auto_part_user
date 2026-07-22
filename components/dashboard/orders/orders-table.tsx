@@ -31,6 +31,12 @@ export type Order = {
   badgeClass: string;
   source: "rfq" | "direct";
   deliveryAddress: string;
+  paymentStatus: "pending" | "succeeded" | "failed" | "refunded";
+  expectedDeliveryAt: string | null;
+  proofOfDeliveryUrl: string | null;
+  proofOfDeliveryNote: string | null;
+  proofRecipientName: string | null;
+  proofSubmittedAt: string | null;
   items: Array<{
     partName: string;
     partNumber: string | null;
@@ -187,7 +193,32 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                       : "RFQ order"}
                   </p>
                 </div>
+                <div className="rounded-sm border border-border bg-brand-surface p-4">
+                  <p className="text-brand-muted">Payment</p>
+                  <p className="mt-2 font-semibold capitalize text-brand-success">{selectedOrder.paymentStatus}</p>
+                </div>
+                {selectedOrder.expectedDeliveryAt ? (
+                  <div className="rounded-sm border border-border bg-brand-surface p-4">
+                    <p className="text-brand-muted">Expected delivery</p>
+                    <p className="mt-2 font-semibold text-foreground">
+                      {new Date(selectedOrder.expectedDeliveryAt).toLocaleDateString("en-AE", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </p>
+                  </div>
+                ) : null}
               </div>
+
+              {selectedOrder.proofSubmittedAt ? (
+                <div className="rounded-sm border border-brand-success/30 bg-brand-success/5 p-4 text-sm">
+                  <p className="font-semibold text-foreground">Proof of delivery</p>
+                  <p className="mt-2 text-brand-muted">Submitted {new Date(selectedOrder.proofSubmittedAt).toLocaleString("en-AE")}{selectedOrder.proofRecipientName ? ` · Received by ${selectedOrder.proofRecipientName}` : ""}</p>
+                  {selectedOrder.proofOfDeliveryNote ? <p className="mt-1 text-brand-muted">{selectedOrder.proofOfDeliveryNote}</p> : null}
+                  {selectedOrder.proofOfDeliveryUrl ? <a className="mt-2 inline-block font-medium text-primary hover:underline" href={`/user_dashboard/api/orders/${encodeURIComponent(selectedOrder.id)}/proof`} target="_blank" rel="noreferrer">View delivery proof</a> : null}
+                </div>
+              ) : null}
 
               <div className="rounded-sm border border-border bg-brand-surface p-4">
                 <p className="font-semibold text-foreground">

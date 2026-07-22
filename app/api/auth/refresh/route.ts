@@ -62,9 +62,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const result = await refresh(request)
+  const requestedReturn = request.nextUrl.searchParams.get("returnTo")
+  const safeReturn = requestedReturn?.startsWith("/") && !requestedReturn.startsWith("//") && !requestedReturn.includes("/api/auth/")
+    ? requestedReturn
+    : withBasePath(appRoutes.overview)
   const destination = new URL(
     result.ok
-      ? withBasePath(appRoutes.overview)
+      ? safeReturn
       : withBasePath(appRoutes.login),
     request.url,
   )

@@ -23,6 +23,7 @@ type VehicleFormProps = {
   onSubmit: (values: VehicleFormValues) => void
   onCancel?: () => void
   className?: string
+  onVinLookup?: (vin: string) => Promise<{ found: boolean; year?: number; make?: string; model?: string; message?: string }>
 }
 
 type VehicleFormErrors = Partial<Record<keyof VehicleFormValues, string>>
@@ -95,9 +96,44 @@ export function VehicleForm({
   onSubmit,
   onCancel,
   className,
+  onVinLookup,
 }: VehicleFormProps) {
   const [values, setValues] = useState<VehicleFormValues>(initialValues)
   const [errors, setErrors] = useState<VehicleFormErrors>({})
+  const [isLookingUpVin, setIsLookingUpVin] = useState(false)
+  const [vinResolved, setVinResolved] = useState(!onVinLookup)
+  const [manualEntry, setManualEntry] = useState(!onVinLookup)
+  const [vinMessage, setVinMessage] = useState("")
+
+  async function lookupVin() {
+    if (!onVinLookup) return
+    const vin = vinInput(values.vin)
+    if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)) {
+      setErrors((current) => ({ ...current, vin: "VIN must be exactly 17 characters and cannot include I, O, or Q" }))
+      return
+    }
+    setIsLookingUpVin(true)
+    setVinMessage("")
+    try {
+      const result = await onVinLookup(vin)
+      if (result.found && result.year && result.make && result.model) {
+        setValues((current) => ({ ...current, vin, year: String(result.year), make: result.make!, model: result.model! }))
+        setVinResolved(true)
+        setManualEntry(false)
+        setVinMessage("Vehicle found. Year, make and model were filled automatically.")
+      } else {
+        setVinResolved(true)
+        setManualEntry(true)
+        setVinMessage(result.message ?? "Vehicle details were not found. Check the VIN or enter them manually.")
+      }
+    } catch (error) {
+      setVinResolved(true)
+      setManualEntry(true)
+      setVinMessage(error instanceof Error ? error.message : "Unable to look up VIN")
+    } finally {
+      setIsLookingUpVin(false)
+    }
+  }
 
   function updateValue<Key extends keyof VehicleFormValues>(
     key: Key,
@@ -137,7 +173,45 @@ export function VehicleForm({
         onSubmit(result.values)
       }}
     >
-      <div className="grid gap-4 md:grid-cols-3">
+      {onVinLookup ? (
+        <div className="space-y-2 rounded-sm border border-border bg-brand-surface p-4">
+          <Label htmlFor="vehicle-vin">VIN first</Label>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Input
+              id="vehicle-vin"
+              placeholder="JT2BF22K6X0123456"
+              required
+              value={values.vin}
+              maxLength={17}
+              aria-invalid={Boolean(errors.vin)}
+              onChange={(event) => {
+                updateValue("vin", vinInput(event.target.value))
+                setVinResolved(false)
+                setManualEntry(false)
+                setVinMessage("")
+              }}
+              className="h-10 border-border bg-brand-panel uppercase"
+            />
+            <Button type="button" disabled={isLookingUpVin || values.vin.length !== 17} onClick={() => void lookupVin()}>
+              {isLookingUpVin ? "Searching..." : "Find Vehicle"}
+            </Button>
+          </div>
+          {errorText("vin")}
+          {vinMessage ? <p className="text-sm text-brand-muted">{vinMessage}</p> : null}
+          {manualEntry && vinMessage ? (
+            <p className="text-xs text-brand-muted">
+              Enter the vehicle details below to save this VIN manually.
+            </p>
+          ) : null}
+          {!vinResolved && vinMessage ? (
+            <Button type="button" variant="outline" onClick={() => { setManualEntry(true); setVinResolved(true) }}>
+              Enter details manually
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {vinResolved ? <div className="grid gap-4 md:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="vehicle-year">Year</Label>
           <Input
@@ -148,6 +222,7 @@ export function VehicleForm({
             required
             value={values.year}
             aria-invalid={Boolean(errors.year)}
+            readOnly={Boolean(onVinLookup && !manualEntry)}
             onChange={(event) =>
               updateValue("year", digitsOnly(event.target.value).slice(0, 4))
             }
@@ -165,6 +240,7 @@ export function VehicleForm({
             value={values.make}
             maxLength={80}
             aria-invalid={Boolean(errors.make)}
+            readOnly={Boolean(onVinLookup && !manualEntry)}
             onChange={(event) => updateValue("make", event.target.value)}
             className="h-10 border-border bg-brand-surface"
           />
@@ -180,15 +256,16 @@ export function VehicleForm({
             value={values.model}
             maxLength={80}
             aria-invalid={Boolean(errors.model)}
+            readOnly={Boolean(onVinLookup && !manualEntry)}
             onChange={(event) => updateValue("model", event.target.value)}
             className="h-10 border-border bg-brand-surface"
           />
           {errorText("model")}
         </div>
-      </div>
+      </div> : null}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
+      {vinResolved ? <div className="grid gap-4 md:grid-cols-2">
+        {!onVinLookup ? <div className="space-y-2">
           <Label htmlFor="vehicle-vin">VIN</Label>
           <Input
             id="vehicle-vin"
@@ -201,7 +278,7 @@ export function VehicleForm({
             className="h-10 border-border bg-brand-surface uppercase"
           />
           {errorText("vin")}
-        </div>
+        </div> : null}
 
         <div className="space-y-2">
           <Label htmlFor="vehicle-mileage">Mileage</Label>
@@ -220,9 +297,9 @@ export function VehicleForm({
           />
           {errorText("mileage")}
         </div>
-      </div>
+      </div> : null}
 
-      <div className="grid gap-4 md:grid-cols-[minmax(0,220px)_1fr] md:items-end">
+      {vinResolved ? <div className="grid gap-4 md:grid-cols-[minmax(0,220px)_1fr] md:items-end">
         <div className="space-y-2">
           <Label htmlFor="vehicle-status">Status</Label>
           <select
@@ -259,7 +336,7 @@ export function VehicleForm({
             </div>
           </div>
         </label>
-      </div>
+      </div> : null}
 
       <div className="flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
         {onCancel ? (
@@ -275,6 +352,7 @@ export function VehicleForm({
 
         <Button
           type="submit"
+          disabled={!vinResolved || isLookingUpVin}
           className="bg-primary text-primary-foreground hover:bg-brand-primary-hover"
         >
           {submitLabel}

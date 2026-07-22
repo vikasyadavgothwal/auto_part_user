@@ -28,6 +28,7 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 NEXT_PUBLIC_FIREBASE_APP_ID=
+NEXT_PUBLIC_FIREBASE_VAPID_KEY=
 NEXT_PUBLIC_MAIN_WEBSITE_URL=https://websitedesignersdubai.ae
 ```
 
@@ -38,6 +39,16 @@ in the environment. Production continues using `NEXT_PUBLIC_MAIN_WEBSITE_URL`.
 Use the same Firebase web application values as `auto-parts-pro-user`. If the
 Firebase values are omitted, login falls back to backend-managed email and
 password accounts.
+
+Firebase push notifications require `NEXT_PUBLIC_FIREBASE_VAPID_KEY` plus the
+Firebase web config above. The dashboard registers the browser token only after
+login and browser notification permission.
+
+User RFQs support CSV, XLSX, and XLS imports with exactly five columns: `VIN
+No`, `Quantity`, `Price`, `Part Number`, and `Part Name`. Mixed VIN files are
+grouped into one RFQ per vehicle. Vehicle creation uses a VIN-first lookup that
+checks the shared database cache before 17VIN and allows manual entry when the
+VIN cannot be resolved.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
@@ -86,6 +97,7 @@ Detected or documented variables:
 - `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
 - `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `NEXT_PUBLIC_FIREBASE_VAPID_KEY`
 - `NEXT_PUBLIC_BASE_PATH`
 
 ### Run, Build, and Test Commands

@@ -17,6 +17,12 @@ type UserOrderRecord = {
   source: "rfq" | "direct";
   totalAmount: number;
   status: OrderStatus;
+  paymentStatus: "pending" | "succeeded" | "failed" | "refunded";
+  expectedDeliveryAt: string | null;
+  proofOfDeliveryUrl: string | null;
+  proofOfDeliveryNote: string | null;
+  proofRecipientName: string | null;
+  proofSubmittedAt: string | null;
   createdAt: string;
   deliveryRecipientName: string | null;
   deliveryPhone: string | null;
@@ -228,6 +234,12 @@ export function mapUserOrders(orders: UserOrderRecord[]): Order[] {
     ]
       .filter(Boolean)
       .join(", "),
+    paymentStatus: order.paymentStatus,
+    expectedDeliveryAt: order.expectedDeliveryAt,
+    proofOfDeliveryUrl: order.proofOfDeliveryUrl,
+    proofOfDeliveryNote: order.proofOfDeliveryNote,
+    proofRecipientName: order.proofRecipientName,
+    proofSubmittedAt: order.proofSubmittedAt,
   }));
 }
 

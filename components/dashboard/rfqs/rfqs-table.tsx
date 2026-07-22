@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { Fragment, useEffect, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -58,10 +58,13 @@ const supplierName = (bid: UserRfq["bids"][number]) =>
   bid.supplier.email ||
   "Supplier"
 
-const vehicleLabel = (rfq: UserRfq) =>
-  [rfq.vehicleYear, rfq.vehicleMake, rfq.vehicleModel, rfq.vehicleTrim]
+const vehicleLabel = (rfq: UserRfq) => {
+  const vehicleCount = new Set(rfq.parts.map((part) => part.vehicleVin).filter(Boolean)).size
+  if (vehicleCount > 1) return `${vehicleCount} vehicles`
+  return [rfq.vehicleYear, rfq.vehicleMake, rfq.vehicleModel, rfq.vehicleTrim]
     .filter(Boolean)
     .join(" ") || "Not specified"
+}
 
 const statusLabel = (rfq: UserRfq) => {
   if (rfq.order) return "Accepted"
@@ -202,6 +205,8 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
         throw new Error(payload.message || "Unable to accept quote")
       }
       onAccepted(selected.id, bidId, payload.order)
+      window.alert("Payment Successful")
+      window.alert("Your order has been created successfully.")
       setConfirmBidId(null)
       setSelectedAddressId("")
     } catch (caught) {
@@ -374,14 +379,14 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
           {selected ? (
             <div className="space-y-6">
               <div className="grid gap-3 rounded-sm border border-border bg-brand-surface p-4 text-sm md:grid-cols-2">
-                <p>
+                {new Set(selected.parts.map((part) => part.vehicleVin).filter(Boolean)).size <= 1 ? <><p>
                   <span className="text-brand-muted">Vehicle:</span>{" "}
                   {vehicleLabel(selected)}
                 </p>
                 <p>
                   <span className="text-brand-muted">VIN:</span>{" "}
                   {selected.vehicleVin || "-"}
-                </p>
+                </p></> : null}
                 <p>
                   <span className="text-brand-muted">Deadline:</span>{" "}
                   {new Date(selected.responseDeadline).toLocaleString("en-AE")}
@@ -395,94 +400,23 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
               </div>
 
               <div>
-                <h3 className="mb-3 font-semibold text-foreground">Requested parts</h3>
+                <div className="mb-3 flex items-center justify-between gap-3"><h3 className="font-semibold text-foreground">Requested parts</h3><span className="text-sm text-brand-muted">Supplier quotations ({selected.bids.length})</span></div>
                 <div className="overflow-x-auto rounded-sm border border-border">
-                  <table className="w-full min-w-[600px] text-sm">
+                  <table className="w-full min-w-[760px] text-sm">
                     <thead className="bg-brand-surface text-brand-muted">
-                      <tr>
-                        <th className="p-3 text-left">Part</th>
-                        <th className="p-3 text-left">Number</th>
-                        <th className="p-3 text-left">Qty</th>
-                        <th className="p-3 text-left">Target</th>
-                      </tr>
+                      <tr><th rowSpan={2} className="p-3 text-left">VIN</th><th rowSpan={2} className="p-3 text-left">Part</th><th rowSpan={2} className="p-3 text-left">Number</th><th rowSpan={2} className="p-3 text-left">Qty</th><th rowSpan={2} className="p-3 text-left">Target</th>{selected.bids.map((bid, index) => <th key={bid.id} colSpan={3} className="border-l border-border p-3 text-left"><div className="flex min-w-[310px] items-center justify-between gap-3"><div><p className="font-semibold text-foreground">Vendor {index + 1}</p><p className="text-xs font-normal">{supplierName(bid)} · {money(bid.totalAmount)} · {bid.deliveryDays} days</p></div>{selected.status === "open" && bid.status === "submitted" ? <Button size="sm" disabled={Boolean(accepting)} onClick={() => { setError(""); setConfirmBidId(bid.id) }}>Accept Quote</Button> : <span className="text-xs capitalize">{bid.status}</span>}</div></th>)}</tr>
+                      <tr>{selected.bids.map((bid) => <Fragment key={bid.id}><th className="border-l border-t border-border p-2 text-left">Condition</th><th className="border-t border-border p-2 text-right">Unit Price</th><th className="border-t border-border p-2 text-right">Line Total</th></Fragment>)}</tr>
                     </thead>
-                    <tbody>
-                      {selected.parts.map((part) => (
-                        <tr key={part.id} className="border-t border-border">
-                          <td className="p-3">{part.partName}</td>
-                          <td className="p-3">{part.partNumber || "-"}</td>
-                          <td className="p-3">{part.quantity}</td>
-                          <td className="p-3">
-                            {part.targetPrice === null ? "-" : money(part.targetPrice)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
+                    <tbody>{selected.parts.map((part) => <tr key={part.id} className="border-t border-border"><td className="p-3 font-mono text-xs">{part.vehicleVin || selected.vehicleVin || "-"}</td><td className="p-3 font-medium">{part.partName}</td><td className="p-3">{part.partNumber || "-"}</td><td className="p-3">{part.quantity}</td><td className="p-3">{part.targetPrice === null ? "-" : money(part.targetPrice)}</td>{selected.bids.map((bid) => { const item = bid.items.find((entry) => entry.rfqPartId === part.id); return <Fragment key={bid.id}><td className="border-l border-border p-3">{item?.partType || "Pending"}</td><td className="p-3 text-right">{item ? money(item.unitPrice) : "-"}</td><td className="p-3 text-right font-medium">{item ? money(item.lineTotal) : "-"}</td></Fragment> })}</tr>)}</tbody>
                   </table>
                 </div>
+                {!selected.bids.length ? <p className="border-x border-b border-border p-4 text-sm text-brand-muted">No supplier quotations received yet.</p> : null}
               </div>
 
               {!selected.order && selected.status === "open"
                 ? renderAddressSelector("user-rfq-order-address")
                 : null}
 
-              <div>
-                <h3 className="mb-3 font-semibold text-foreground">
-                  Supplier quotations ({selected.bids.length})
-                </h3>
-                {selected.bids.length === 0 ? (
-                  <p className="rounded-sm border border-border p-5 text-brand-muted">
-                    No supplier quotations received yet. A quotation will appear here after a supplier enters an AED price for every requested part and submits the complete quote.
-                  </p>
-                ) : (
-                  <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
-                    {selected.bids.map((bid) => (
-                      <div
-                        key={bid.id}
-                        className="min-w-0 space-y-4 rounded-sm border border-border bg-brand-surface p-4"
-                      >
-                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                          <div>
-                          <p className="font-semibold text-foreground">{supplierName(bid)}</p>
-                          <p className="mt-1 text-sm text-brand-muted">
-                            Delivery in {bid.deliveryDays} days
-                            {bid.notes ? ` · ${bid.notes}` : ""}
-                          </p>
-                          <p className="mt-1 text-xs capitalize text-brand-muted">
-                            {bid.status}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <strong className="text-lg text-foreground">
-                            {money(bid.totalAmount)}
-                          </strong>
-                          {selected.status === "open" && bid.status === "submitted" ? (
-                            <Button
-                              disabled={Boolean(accepting) || bid.items.length !== selected.parts.length}
-                              onClick={() => {
-                                setError("")
-                                setConfirmBidId(bid.id)
-                              }}
-                              className="bg-primary text-primary-foreground hover:bg-brand-primary-hover"
-                            >
-                              Accept Quote
-                            </Button>
-                          ) : null}
-                        </div>
-                        </div>
-                        {bid.items.length === selected.parts.length ? (
-                          <div className="max-w-full overflow-x-auto rounded-sm border border-border">
-                            <table className="w-full min-w-[560px] text-sm">
-                              <thead className="bg-background text-brand-muted"><tr><th className="p-3 text-left">Quoted part</th><th className="p-3 text-left">Qty</th><th className="p-3 text-left">Condition</th><th className="p-3 text-right">Unit (AED)</th><th className="p-3 text-right">Line total (AED)</th></tr></thead>
-                              <tbody>{selected.parts.map((part) => { const item = bid.items.find((entry) => entry.rfqPartId === part.id)!; return <tr key={part.id} className="border-t border-border"><td className="p-3">{part.partName}{part.partNumber ? ` (${part.partNumber})` : ""}</td><td className="p-3">{part.quantity}</td><td className="p-3">{item.partType}</td><td className="p-3 text-right">{money(item.unitPrice)}</td><td className="p-3 text-right font-medium">{money(item.lineTotal)}</td></tr> })}</tbody>
-                            </table>
-                          </div>
-                        ) : <p className="text-sm text-destructive">This supplier must update the quote with a price for every part before it can be accepted.</p>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
               {error ? <p className="text-sm text-destructive">{error}</p> : null}
             </div>
           ) : null}
