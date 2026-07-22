@@ -2,20 +2,20 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Calendar, ChevronLeft, ChevronRight, Download, Plus, Trash2, Upload } from "lucide-react"
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { RfqAddressSection } from "@/components/dashboard/rfqs/rfq-address-section"
+import { RfqAttachmentsSection } from "@/components/dashboard/rfqs/rfq-attachments-section"
+import { RfqPartsSection } from "@/components/dashboard/rfqs/rfq-parts-section"
+import {
+  RfqReviewSubmitSection,
+  RfqSubmitNavigation,
+} from "@/components/dashboard/rfqs/rfq-review-submit-section"
+import { RfqVehicleSection } from "@/components/dashboard/rfqs/rfq-vehicle-section"
 import { readApiResponse } from "@/lib/api-response"
 import { authenticatedFetch } from "@/lib/auth/client"
 import type { DashboardUser } from "@/lib/auth/types"
 import { appRoutes, withBasePath } from "@/lib/routes"
-import {
-  getVehicleDisplayName,
-  type VehicleRecord,
-} from "@/lib/vehicles"
+import type { VehicleRecord } from "@/lib/vehicles"
 
 type Step = 1 | 2 | 3
 
@@ -581,460 +581,83 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
       ) : null}
 
       {step === 1 ? (
-        <Card className="rounded-sm border-border bg-brand-panel">
-          <CardContent className="space-y-6 p-6">
-            <div>
-              <h2 className="text-xl font-semibold text-foreground">Choose how to identify the vehicle</h2>
-              <p className="mt-1 text-sm text-brand-muted">
-                Use a saved vehicle, or enter a VIN with each requested part. You only need to use one method.
-              </p>
-              {fieldError("parts")}
-            </div>
-
-            <label className="space-y-2">
-              <Label>Option 1 — Select a saved vehicle</Label>
-              <select
-                value={selectedVehicleId}
-                onChange={(event) => selectVehicle(event.target.value)}
-                className="h-10 w-full rounded-sm border border-border bg-brand-surface px-3 text-sm text-foreground outline-none focus-visible:border-primary"
-              >
-                <option value="">No saved vehicle selected</option>
-                {vehicles.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {getVehicleDisplayName(item)} · {item.vin}
-                  </option>
-                ))}
-              </select>
-              <span className="block text-xs text-brand-muted">The selected vehicle applies to every part unless you enter a different VIN on a part.</span>
-            </label>
-
-            <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wider text-brand-muted"><span className="h-px flex-1 bg-border" /><span>or</span><span className="h-px flex-1 bg-border" /></div>
-
-            <div className="rounded-sm border border-border bg-brand-surface p-4">
-              <p className="font-medium text-foreground">Option 2 — Enter VINs with the parts</p>
-              <p className="mt-1 text-sm text-brand-muted">Use this for an unsaved vehicle or when the request contains different vehicles. Every VIN must contain 17 valid characters.</p>
-            </div>
-
-            <label className="flex cursor-pointer items-center justify-between gap-4 rounded-sm border-2 border-dashed border-border bg-brand-surface p-4 hover:border-primary">
-              <span><span className="flex items-center gap-2 font-medium text-foreground"><Upload className="h-5 w-5" />Import CSV or Excel</span><span className="mt-1 block text-sm text-brand-muted">Columns: VIN No, Quantity, Price, Part Number, Part Name</span></span>
-              <span className="rounded-sm bg-primary px-4 py-2 text-sm text-primary-foreground">{isImporting ? "Importing..." : "Choose file"}</span>
-              <input type="file" className="sr-only" accept=".csv,.xlsx,.xls" disabled={isImporting} onChange={(event) => { void importRfqFile(event.target.files?.[0]); event.currentTarget.value = "" }} />
-            </label>
-            <div className="flex justify-end">
-              <a
-                href={withBasePath("/templates/rfq-import-template.csv")}
-                download="rfq-import-template.csv"
-                className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-              >
-                <Download className="h-4 w-4" />
-                Download sample RFQ CSV
-              </a>
-            </div>
-
-            <div className="space-y-4">
-              {importedVehicleCount > 1 ? (
-                <p className="rounded-sm border border-primary/30 bg-primary/10 p-3 text-sm text-foreground">
-                  {`${importedVehicleCount} vehicles verified successfully.`}
-                </p>
-              ) : null}
-              {parts.map((part, index) => (
-                <div
-                  key={part.id}
-                  className="rounded-sm border border-border bg-brand-surface p-5"
-                >
-                  <div className="mb-4 flex items-center justify-between gap-4">
-                    <div>
-                      <div className="font-semibold text-foreground">Part {index + 1}</div>
-                      {part.vin ? <div className="text-xs text-brand-muted">VIN: {part.vin}</div> : null}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      disabled={parts.length === 1}
-                      onClick={() => removePart(part.id)}
-                      aria-label="Remove part"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <label className="space-y-2 md:col-span-2"><Label>{selectedVehicleId ? "Different vehicle VIN (optional)" : "Vehicle VIN *"}</Label><Input value={part.vin ?? ""} maxLength={17} aria-invalid={Boolean(fieldErrors[partErrorKey(part.id, "vin")])} onChange={(event) => updatePart(part.id, "vin", event.target.value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, ""))} placeholder={selectedVehicleId ? "Leave blank to use the selected vehicle" : "Enter the 17-character VIN"} className="h-10 uppercase border-border bg-brand-panel" /><span className="block text-xs text-brand-muted">{selectedVehicleId ? "Only enter this when this part is for another vehicle." : "Required because no saved vehicle is selected."}</span>{fieldError(partErrorKey(part.id, "vin"))}</label>
-                    <label className="space-y-2">
-                      <Label>Part Name *</Label>
-                      <Input
-                        value={part.partName}
-                        maxLength={120}
-                        aria-invalid={Boolean(fieldErrors[partErrorKey(part.id, "partName")])}
-                        onChange={(event) => updatePart(part.id, "partName", event.target.value)}
-                        placeholder="Brake pads"
-                        className="h-10 border-border bg-brand-panel"
-                      />
-                      {fieldError(partErrorKey(part.id, "partName"))}
-                    </label>
-                    <label className="space-y-2">
-                      <Label>Part Number</Label>
-                      <Input
-                        value={part.partNumber}
-                        maxLength={80}
-                        aria-invalid={Boolean(fieldErrors[partErrorKey(part.id, "partNumber")])}
-                        onChange={(event) => updatePart(part.id, "partNumber", event.target.value)}
-                        placeholder="BC1259"
-                        className="h-10 border-border bg-brand-panel"
-                      />
-                      {fieldError(partErrorKey(part.id, "partNumber"))}
-                    </label>
-                    <label className="space-y-2">
-                      <Label>Quantity *</Label>
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={part.quantity}
-                        maxLength={3}
-                        aria-invalid={Boolean(fieldErrors[partErrorKey(part.id, "quantity")])}
-                        onChange={(event) =>
-                          updatePart(
-                            part.id,
-                            "quantity",
-                            Number(digitsOnly(event.target.value).slice(0, 3)) || 1,
-                          )
-                        }
-                        className="h-10 border-border bg-brand-panel"
-                      />
-                      {fieldError(partErrorKey(part.id, "quantity"))}
-                    </label>
-                    <label className="space-y-2">
-                      <Label>Target Price</Label>
-                      <Input
-                        inputMode="decimal"
-                        value={part.targetPrice}
-                        maxLength={10}
-                        aria-invalid={Boolean(fieldErrors[partErrorKey(part.id, "targetPrice")])}
-                        onChange={(event) =>
-                          updatePart(part.id, "targetPrice", decimalOnly(event.target.value))
-                        }
-                        placeholder="125"
-                        className="h-10 border-border bg-brand-panel"
-                      />
-                      {fieldError(partErrorKey(part.id, "targetPrice"))}
-                    </label>
-                    <label className="space-y-2 md:col-span-2">
-                      <Label>Notes</Label>
-                      <Input
-                        value={part.notes}
-                        maxLength={500}
-                        aria-invalid={Boolean(fieldErrors[partErrorKey(part.id, "notes")])}
-                        onChange={(event) => updatePart(part.id, "notes", event.target.value)}
-                        placeholder="Brand preference, warranty requirement, or other details"
-                        className="h-10 border-border bg-brand-panel"
-                      />
-                      {fieldError(partErrorKey(part.id, "notes"))}
-                    </label>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {parts.some((part) => part.vin) ? <label className="flex items-center gap-3 rounded-sm border border-border bg-brand-surface p-4 text-sm text-foreground"><input type="checkbox" checked={saveResolvedVehicles} onChange={(event) => setSaveResolvedVehicles(event.target.checked)} className="h-4 w-4 accent-primary" />Save newly resolved VIN vehicles to my account</label> : null}
-
-            <Button
-              type="button"
-              variant="outline"
-              className="h-12 w-full gap-2 border-dashed"
-              disabled={parts.length >= maxParts}
-              onClick={addPart}
-            >
-              <Plus className="h-4 w-4" />
-              Add Another Part
-            </Button>
-          </CardContent>
-        </Card>
+        <RfqVehicleSection
+          vehicles={vehicles}
+          selectedVehicleId={selectedVehicleId}
+          isImporting={isImporting}
+          fieldError={fieldError}
+          selectVehicle={selectVehicle}
+          importRfqFile={importRfqFile}
+        >
+          <RfqPartsSection
+            parts={parts}
+            selectedVehicleId={selectedVehicleId}
+            importedVehicleCount={importedVehicleCount}
+            saveResolvedVehicles={saveResolvedVehicles}
+            maxParts={maxParts}
+            fieldErrors={fieldErrors}
+            fieldError={fieldError}
+            partErrorKey={partErrorKey}
+            digitsOnly={digitsOnly}
+            decimalOnly={decimalOnly}
+            updatePart={updatePart}
+            removePart={removePart}
+            addPart={addPart}
+            setSaveResolvedVehicles={setSaveResolvedVehicles}
+          />
+        </RfqVehicleSection>
       ) : null}
 
       {step === 2 ? (
-        <Card className="rounded-sm border-border bg-brand-panel">
-          <CardContent className="space-y-6 p-6">
-            <div>
-              <h2 className="text-xl font-semibold text-foreground">RFQ details</h2>
-              <p className="mt-1 text-sm text-brand-muted">
-                {importedVehicleCount > 1
-                  ? `${importedVehicleCount} vehicles are linked to the requested parts. Complete the request and contact details below.`
-                  : "Confirm the vehicle, request, and contact details below."}
-              </p>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              {importedVehicleCount <= 1 ? <label className="space-y-2 md:col-span-2">
-                <Label>Saved Vehicle</Label>
-                <select
-                  value={selectedVehicleId}
-                  onChange={(event) => selectVehicle(event.target.value)}
-                  className="h-10 w-full rounded-sm border border-border bg-brand-surface px-3 text-sm text-foreground outline-none focus-visible:border-primary"
-                >
-                  <option value="">Enter manually</option>
-                  {vehicles.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {getVehicleDisplayName(item)} · {item.vin}
-                    </option>
-                  ))}
-                </select>
-              </label> : null}
-              <label className="space-y-2">
-                <Label>Project Name *</Label>
-                <Input
-                  value={projectName}
-                  maxLength={120}
-                  aria-invalid={Boolean(fieldErrors.projectName)}
-                  onChange={(event) => {
-                    clearError("projectName")
-                    setProjectName(event.target.value)
-                  }}
-                  className="h-10 border-border bg-brand-surface"
-                />
-                {fieldError("projectName")}
-              </label>
-              <label className="space-y-2">
-                <Label>Response Deadline *</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-muted" />
-                  <Input
-                    type="date"
-                    value={deadline}
-                    aria-invalid={Boolean(fieldErrors.deadline)}
-                    onChange={(event) => {
-                      clearError("deadline")
-                      setDeadline(event.target.value)
-                    }}
-                    className="h-10 border-border bg-brand-surface pl-9"
-                  />
-                </div>
-                {fieldError("deadline")}
-              </label>
-              {importedVehicleCount <= 1 ? <><label className="space-y-2">
-                <Label>Vehicle Year *</Label>
-                <Input
-                  inputMode="numeric"
-                  value={vehicle.year}
-                  maxLength={4}
-                  aria-invalid={Boolean(fieldErrors["vehicle.year"])}
-                  onChange={(event) =>
-                    updateVehicle("year", digitsOnly(event.target.value).slice(0, 4))
-                  }
-                  className="h-10 border-border bg-brand-surface"
-                />
-                {fieldError("vehicle.year")}
-              </label>
-              <label className="space-y-2">
-                <Label>Make *</Label>
-                <Input
-                  value={vehicle.make}
-                  maxLength={80}
-                  aria-invalid={Boolean(fieldErrors["vehicle.make"])}
-                  onChange={(event) => updateVehicle("make", event.target.value)}
-                  className="h-10 border-border bg-brand-surface"
-                />
-                {fieldError("vehicle.make")}
-              </label>
-              <label className="space-y-2">
-                <Label>Model *</Label>
-                <Input
-                  value={vehicle.model}
-                  maxLength={80}
-                  aria-invalid={Boolean(fieldErrors["vehicle.model"])}
-                  onChange={(event) => updateVehicle("model", event.target.value)}
-                  className="h-10 border-border bg-brand-surface"
-                />
-                {fieldError("vehicle.model")}
-              </label>
-              <label className="space-y-2">
-                <Label>Trim</Label>
-                <Input
-                  value={vehicle.trim}
-                  maxLength={80}
-                  aria-invalid={Boolean(fieldErrors["vehicle.trim"])}
-                  onChange={(event) => updateVehicle("trim", event.target.value)}
-                  className="h-10 border-border bg-brand-surface"
-                />
-                {fieldError("vehicle.trim")}
-              </label>
-              <label className="space-y-2 md:col-span-2">
-                <Label>VIN</Label>
-                <Input
-                  value={vehicle.vin}
-                  maxLength={17}
-                  aria-invalid={Boolean(fieldErrors["vehicle.vin"])}
-                  onChange={(event) =>
-                    updateVehicle(
-                      "vin",
-                      event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17),
-                    )
-                  }
-                  className="h-10 border-border bg-brand-surface uppercase"
-                />
-                {fieldError("vehicle.vin")}
-              </label></> : null}
-              <label className="space-y-2">
-                <Label>Customer / Company *</Label>
-                <Input
-                  value={companyName}
-                  maxLength={120}
-                  aria-invalid={Boolean(fieldErrors.companyName)}
-                  onChange={(event) => {
-                    clearError("companyName")
-                    setCompanyName(event.target.value)
-                  }}
-                  className="h-10 border-border bg-brand-surface"
-                />
-                {fieldError("companyName")}
-              </label>
-              <label className="space-y-2">
-                <Label>Contact Name *</Label>
-                <Input
-                  value={contactName}
-                  maxLength={120}
-                  aria-invalid={Boolean(fieldErrors.contactName)}
-                  onChange={(event) => {
-                    clearError("contactName")
-                    setContactName(event.target.value)
-                  }}
-                  className="h-10 border-border bg-brand-surface"
-                />
-                {fieldError("contactName")}
-              </label>
-              <label className="space-y-2">
-                <Label>Email *</Label>
-                <Input
-                  type="email"
-                  value={email}
-                  maxLength={180}
-                  aria-invalid={Boolean(fieldErrors.email)}
-                  onChange={(event) => {
-                    clearError("email")
-                    setEmail(event.target.value)
-                  }}
-                  className="h-10 border-border bg-brand-surface"
-                />
-                {fieldError("email")}
-              </label>
-              <label className="space-y-2">
-                <Label>Phone *</Label>
-                <Input
-                  value={phone}
-                  maxLength={20}
-                  aria-invalid={Boolean(fieldErrors.phone)}
-                  onChange={(event) => {
-                    clearError("phone")
-                    setPhone(event.target.value)
-                  }}
-                  className="h-10 border-border bg-brand-surface"
-                />
-                {fieldError("phone")}
-              </label>
-              <label className="space-y-2 md:col-span-2">
-                <Label>Description</Label>
-                <textarea
-                  value={description}
-                  maxLength={1000}
-                  aria-invalid={Boolean(fieldErrors.description)}
-                  onChange={(event) => {
-                    clearError("description")
-                    setDescription(event.target.value)
-                  }}
-                  rows={4}
-                  className="w-full resize-none rounded-sm border border-border bg-brand-surface px-3 py-2 text-sm outline-none focus-visible:border-primary"
-                  placeholder="Any extra fitment, brand, warranty, or delivery details"
-                />
-                {fieldError("description")}
-              </label>
-            </div>
-          </CardContent>
-        </Card>
+        <>
+          <RfqAddressSection
+            importedVehicleCount={importedVehicleCount}
+            selectedVehicleId={selectedVehicleId}
+            vehicles={vehicles}
+            projectName={projectName}
+            deadline={deadline}
+            vehicle={vehicle}
+            companyName={companyName}
+            contactName={contactName}
+            email={email}
+            phone={phone}
+            description={description}
+            fieldErrors={fieldErrors}
+            fieldError={fieldError}
+            clearError={clearError}
+            digitsOnly={digitsOnly}
+            selectVehicle={selectVehicle}
+            updateVehicle={updateVehicle}
+            setProjectName={setProjectName}
+            setDeadline={setDeadline}
+            setCompanyName={setCompanyName}
+            setContactName={setContactName}
+            setEmail={setEmail}
+            setPhone={setPhone}
+            setDescription={setDescription}
+          />
+          <RfqAttachmentsSection />
+        </>
       ) : null}
 
       {step === 3 ? (
-        <Card className="rounded-sm border-border bg-brand-panel">
-          <CardContent className="space-y-6 p-6">
-            <div>
-              <h2 className="text-xl font-semibold text-foreground">Review RFQ</h2>
-              <p className="mt-1 text-sm text-brand-muted">
-                Confirm the request before sending it to suppliers.
-              </p>
-            </div>
-            <div className="grid gap-4 rounded-sm border border-border bg-brand-surface p-4 text-sm md:grid-cols-2">
-              <p>
-                <span className="text-brand-muted">Project:</span> {projectName}
-              </p>
-              <p>
-                <span className="text-brand-muted">Deadline:</span> {deadline}
-              </p>
-              <p>
-                <span className="text-brand-muted">Vehicle:</span>{" "}
-                {[vehicle.year, vehicle.make, vehicle.model, vehicle.trim]
-                  .filter(Boolean)
-                  .join(" ")}
-              </p>
-              <p>
-                <span className="text-brand-muted">VIN:</span> {vehicle.vin || "-"}
-              </p>
-              <p>
-                <span className="text-brand-muted">Line items:</span> {parts.length}
-              </p>
-              <p>
-                <span className="text-brand-muted">Total quantity:</span> {totalQuantity}
-              </p>
-            </div>
-            <div className="space-y-3">
-              {parts.map((part) => (
-                <div
-                  key={part.id}
-                  className="rounded-sm border border-border bg-brand-surface p-4 text-sm"
-                >
-                  <div className="font-semibold text-foreground">{part.partName}</div>
-                  <div className="mt-1 text-brand-muted">
-                    Part #: {part.partNumber || "-"} · Qty {part.quantity}
-                    {part.targetPrice ? ` · Target AED ${part.targetPrice}` : ""}
-                  </div>
-                  {part.notes ? <div className="mt-2 text-brand-muted">{part.notes}</div> : null}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <RfqReviewSubmitSection
+          projectName={projectName}
+          deadline={deadline}
+          vehicle={vehicle}
+          parts={parts}
+          totalQuantity={totalQuantity}
+        />
       ) : null}
 
-      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
-        <Button
-          type="button"
-          variant="outline"
-          disabled={step === 1 || isSubmitting}
-          onClick={handleBack}
-          className="gap-2"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Back
-        </Button>
-        {step < 3 ? (
-          <Button
-            type="button"
-            disabled={isSubmitting || (step === 1 && !vehicleAssignmentComplete)}
-            onClick={handleNext}
-            className="gap-2 bg-primary text-primary-foreground hover:bg-brand-primary-hover"
-          >
-            Continue
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            disabled={isSubmitting}
-            onClick={() => void handleSubmit()}
-            className="bg-primary text-primary-foreground hover:bg-brand-primary-hover"
-          >
-            {isSubmitting ? "Submitting..." : "Submit RFQ to Suppliers"}
-          </Button>
-        )}
-      </div>
+      <RfqSubmitNavigation
+        step={step}
+        isSubmitting={isSubmitting}
+        vehicleAssignmentComplete={vehicleAssignmentComplete}
+        handleBack={handleBack}
+        handleNext={handleNext}
+        handleSubmit={handleSubmit}
+      />
     </div>
   )
 }

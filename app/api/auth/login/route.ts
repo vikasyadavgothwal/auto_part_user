@@ -78,8 +78,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       { status: 403 },
     )
   }
-  console.log("Login payload:", payload)
-
   const response = NextResponse.json(payload, {
     status: backendResponse.status,
   })
