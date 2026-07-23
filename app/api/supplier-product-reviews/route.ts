@@ -1,0 +1,11 @@
+import { forwardBackendRequest } from "@/lib/auth/backend";
+
+export const dynamic = "force-dynamic";
+
+export async function POST(request: Request) {
+  return forwardBackendRequest(request, "/api/v1/user/supplier-product-reviews");
+}
+
+export async function PATCH(request: Request) {
+  return forwardBackendRequest(request, "/api/v1/user/supplier-product-reviews");
+}

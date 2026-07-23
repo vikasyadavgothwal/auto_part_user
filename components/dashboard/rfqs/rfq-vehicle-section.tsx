@@ -64,7 +64,7 @@ export function RfqVehicleSection({
         </div>
 
         <label className="flex cursor-pointer items-center justify-between gap-4 rounded-sm border-2 border-dashed border-border bg-brand-surface p-4 hover:border-primary">
-          <span><span className="flex items-center gap-2 font-medium text-foreground"><Upload className="h-5 w-5" />Import CSV or Excel</span><span className="mt-1 block text-sm text-brand-muted">Columns: VIN No, Quantity, Price, Part Number, Part Name</span></span>
+          <span><span className="flex items-center gap-2 font-medium text-foreground"><Upload className="h-5 w-5" />Import CSV or Excel</span><span className="mt-1 block text-sm text-brand-muted">Columns: VIN No, Quantity, Target Price, Part Number, Part Name</span></span>
           <span className="rounded-sm bg-primary px-4 py-2 text-sm text-primary-foreground">{isImporting ? "Importing..." : "Choose file"}</span>
           <input type="file" className="sr-only" accept=".csv,.xlsx,.xls" disabled={isImporting} onChange={(event) => { void importRfqFile(event.target.files?.[0]); event.currentTarget.value = "" }} />
         </label>

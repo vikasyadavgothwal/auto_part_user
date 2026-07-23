@@ -13,6 +13,7 @@ export type UserRfqBid = {
     unitPrice: number
     lineTotal: number
     partType: string
+    deliveryOption: string
   }>
   supplier: {
     id: string

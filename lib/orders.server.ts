@@ -16,6 +16,9 @@ type UserOrderRecord = {
   publicId: string;
   source: "rfq" | "direct";
   totalAmount: number;
+  deliveryProgress: number;
+  deliveredItemCount: number;
+  totalItemCount: number;
   status: OrderStatus;
   paymentStatus: "pending" | "succeeded" | "failed" | "refunded";
   expectedDeliveryAt: string | null;
@@ -40,11 +43,27 @@ type UserOrderRecord = {
     email: string | null;
   };
   items: Array<{
+    id: string;
     partName: string;
     partNumber: string | null;
     quantity: number;
     unitPrice: number | null;
     lineTotal: number | null;
+    deliveryOption: string | null;
+    expectedDeliveryAt: string | null;
+    deliveredAt: string | null;
+    proofOfDeliveryUrl: string | null;
+    proofOfDeliveryNote: string | null;
+    proofRecipientName: string | null;
+    proofSubmittedAt: string | null;
+    buyerConfirmedAt: string | null;
+    review: {
+      id: string;
+      rating: number;
+      comment: string;
+      createdAt: string;
+      updatedAt: string;
+    } | null;
   }>;
   rfq: {
     publicId: string;
@@ -217,6 +236,9 @@ export function mapUserOrders(orders: UserOrderRecord[]): Order[] {
     vehicle: vehicleSummary(order),
     supplier: supplierName(order),
     total: formatMoney(order.totalAmount),
+    deliveryProgress: order.deliveryProgress,
+    deliveredItemCount: order.deliveredItemCount,
+    totalItemCount: order.totalItemCount,
     status: statusLabel(order.status),
     badgeClass: badgeClass(order.status),
     items: order.items,

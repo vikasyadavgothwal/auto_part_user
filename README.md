@@ -45,7 +45,7 @@ Firebase web config above. The dashboard registers the browser token only after
 login and browser notification permission.
 
 User RFQs support CSV, XLSX, and XLS imports with exactly five columns: `VIN
-No`, `Quantity`, `Price`, `Part Number`, and `Part Name`. Mixed VIN files are
+No`, `Quantity`, `Target Price`, `Part Number`, and `Part Name`. Mixed VIN files are
 grouped into one RFQ per vehicle. Vehicle creation uses a VIN-first lookup that
 checks the shared database cache before 17VIN and allows manual entry when the
 VIN cannot be resolved.
