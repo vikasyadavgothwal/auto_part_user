@@ -65,6 +65,27 @@ type UserOrderRecord = {
       updatedAt: string;
     } | null;
   }>;
+  garageBookings: Array<{
+    id: string;
+    publicId: string;
+    serviceName: string;
+    garageId: string;
+    serviceId: string | null;
+    bookingDate: string | null;
+    bookingTime: string | null;
+    durationMinutes: number;
+    price: number;
+    currency: string;
+    status: "pending" | "pending_slot_selection" | "confirmed" | "completed" | "cancelled";
+    linkedOrderId: string | null;
+    canSelectSlot?: boolean;
+    garage: {
+      companyName: string | null;
+      firstName: string | null;
+      lastName: string | null;
+      email: string | null;
+    };
+  }>;
   rfq: {
     publicId: string;
     vehicleVin: string | null;
@@ -262,6 +283,7 @@ export function mapUserOrders(orders: UserOrderRecord[]): Order[] {
     proofOfDeliveryNote: order.proofOfDeliveryNote,
     proofRecipientName: order.proofRecipientName,
     proofSubmittedAt: order.proofSubmittedAt,
+    garageBookings: order.garageBookings ?? [],
   }));
 }
 

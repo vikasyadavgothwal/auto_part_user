@@ -38,7 +38,13 @@ export type Booking = {
   vehicle: string
   price: string
   status: string
-  rawStatus?: "pending" | "confirmed" | "completed" | "cancelled"
+  rawStatus?:
+    | "pending"
+    | "pending_slot_selection"
+    | "confirmed"
+    | "completed"
+    | "cancelled"
+  canSelectSlot?: boolean
   badgeClass: string
   reviewId?: string | null
   reviewRating?: number | null
@@ -132,6 +138,7 @@ export function BookingsTable({ bookings }: BookingsTableProps) {
     })
   }
 
+
   return (
     <>
       <Card className="overflow-hidden rounded-sm border border-border bg-brand-panel py-0">
@@ -202,15 +209,17 @@ export function BookingsTable({ bookings }: BookingsTableProps) {
                     </TableCell>
 
                     <TableCell className="px-6 py-4 text-sm text-brand-muted">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={booking.reviewId ? "outline" : "default"}
-                        disabled={!canReview}
-                        onClick={() => openReview(booking)}
-                      >
-                        {booking.reviewId ? "Edit review" : "Review"}
-                      </Button>
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={booking.reviewId ? "outline" : "default"}
+                          disabled={!canReview}
+                          onClick={() => openReview(booking)}
+                        >
+                          {booking.reviewId ? "Edit review" : "Review"}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )

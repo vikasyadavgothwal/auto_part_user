@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Star } from "lucide-react";
+import { useEffect, useState, useTransition } from "react";
+import { CalendarClock, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -69,10 +69,42 @@ export type Order = {
       updatedAt: string;
     } | null;
   }>;
+  garageBookings: Array<{
+    id: string;
+    publicId: string;
+    serviceName: string;
+    garageId: string;
+    serviceId: string | null;
+    bookingDate: string | null;
+    bookingTime: string | null;
+    durationMinutes: number;
+    price: number;
+    currency: string;
+    status: "pending" | "pending_slot_selection" | "confirmed" | "completed" | "cancelled";
+    linkedOrderId: string | null;
+    canSelectSlot?: boolean;
+    garage: {
+      companyName: string | null;
+      firstName: string | null;
+      lastName: string | null;
+      email: string | null;
+    };
+  }>;
 };
 
 type OrdersTableProps = {
   orders: Order[];
+};
+
+type VehicleRecord = {
+  id: string;
+  year: string;
+  make: string;
+  model: string;
+  vin: string;
+  mileage: string;
+  status: string;
+  primary: boolean;
 };
 
 const tableHeaders = [
@@ -98,10 +130,40 @@ const deliveryOptions = [
 const deliveryLabel = (value: string | null | undefined) =>
   deliveryOptions.find((option) => option.value === value)?.label ?? "Not scheduled";
 
+const slotTimes = Array.from({ length: 35 }, (_, index) => {
+  const minutes = 9 * 60 + index * 15;
+  const hour = Math.floor(minutes / 60);
+  const minute = minutes % 60;
+  const suffix = hour >= 12 ? "PM" : "AM";
+  return `${hour % 12 || 12}:${String(minute).padStart(2, "0")} ${suffix}`;
+});
+
+const dateOptions = Array.from({ length: 14 }, (_, index) => {
+  const date = new Date();
+  date.setDate(date.getDate() + index);
+  const value = date.toISOString().slice(0, 10);
+  return {
+    value,
+    label: date.toLocaleDateString("en-AE", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    }),
+  };
+});
+
 export function OrdersTable({ orders }: OrdersTableProps) {
   const router = useRouter();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [reviewItem, setReviewItem] = useState<Order["items"][number] | null>(null);
+  const [slotBooking, setSlotBooking] = useState<Order["garageBookings"][number] | null>(null);
+  const [slotDate, setSlotDate] = useState("");
+  const [slotTime, setSlotTime] = useState("");
+  const [vehicles, setVehicles] = useState<VehicleRecord[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState("");
+  const [unavailableTimes, setUnavailableTimes] = useState<string[]>([]);
+  const [isLoadingVehicles, setIsLoadingVehicles] = useState(false);
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -144,6 +206,146 @@ export function OrdersTable({ orders }: OrdersTableProps) {
 
         toast.success(isEditing ? "Review updated successfully" : "Review saved successfully");
         setReviewItem(null);
+        router.refresh();
+      } catch {
+        setError("Unable to reach the server. Please try again.");
+      }
+    });
+  }
+
+  function garageName(booking: Order["garageBookings"][number]) {
+    return (
+      booking.garage.companyName ||
+      [booking.garage.firstName, booking.garage.lastName].filter(Boolean).join(" ") ||
+      booking.garage.email ||
+      "Garage"
+    );
+  }
+
+  function bookingStatusLabel(status: Order["garageBookings"][number]["status"]) {
+    if (status === "pending_slot_selection") return "Awaiting slot selection";
+    return status.slice(0, 1).toUpperCase() + status.slice(1);
+  }
+
+  function openSlotPicker(booking: Order["garageBookings"][number]) {
+    setSlotBooking(booking);
+    setSlotDate(dateOptions[0]?.value ?? "");
+    setSlotTime("");
+    setSelectedVehicleId("");
+    setUnavailableTimes([]);
+    setIsLoadingVehicles(true);
+    setIsLoadingAvailability(Boolean(booking.serviceId));
+    setError(null);
+  }
+
+  useEffect(() => {
+    if (!slotBooking) return;
+    let mounted = true;
+    authenticatedFetch(withBasePath("/api/vehicles?page=1&pageSize=50"), {
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as
+          | { ok?: boolean; vehicles?: VehicleRecord[]; message?: string }
+          | null;
+        if (!response.ok || !payload?.ok) {
+          throw new Error(payload?.message ?? "Unable to load vehicles");
+        }
+        if (!mounted) return;
+        const nextVehicles = payload.vehicles ?? [];
+        setVehicles(nextVehicles);
+        setSelectedVehicleId(
+          nextVehicles.find((vehicle) => vehicle.primary)?.id ??
+            nextVehicles[0]?.id ??
+            "",
+        );
+      })
+      .catch((caught) => {
+        if (!mounted) return;
+        setVehicles([]);
+        setError(caught instanceof Error ? caught.message : "Unable to load vehicles");
+      })
+      .finally(() => {
+        if (mounted) setIsLoadingVehicles(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [slotBooking]);
+
+  useEffect(() => {
+    if (!slotBooking?.serviceId || !slotDate) return;
+    let mounted = true;
+    const params = new URLSearchParams({
+      garageId: slotBooking.garageId,
+      serviceId: slotBooking.serviceId,
+      bookingDate: slotDate,
+    });
+    authenticatedFetch(
+      withBasePath(`/api/garage-bookings/availability?${params.toString()}`),
+      { cache: "no-store" },
+    )
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as
+          | { ok?: boolean; unavailableTimes?: string[]; message?: string }
+          | null;
+        if (!response.ok || !payload?.ok) {
+          throw new Error(payload?.message ?? "Unable to load slots");
+        }
+        if (!mounted) return;
+        setUnavailableTimes(payload.unavailableTimes ?? []);
+      })
+      .catch((caught) => {
+        if (!mounted) return;
+        setUnavailableTimes([]);
+        setError(caught instanceof Error ? caught.message : "Unable to load slots");
+      })
+      .finally(() => {
+        if (mounted) setIsLoadingAvailability(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [slotBooking, slotDate]);
+
+  function submitSlot() {
+    const selectedVehicle = vehicles.find(
+      (vehicle) => vehicle.id === selectedVehicleId,
+    );
+    if (!slotBooking || !slotDate || !slotTime || !selectedVehicle) {
+      setError("Select car, date, and available time for the service slot.");
+      return;
+    }
+
+    setError(null);
+    startTransition(async () => {
+      try {
+        const response = await authenticatedFetch(
+          withBasePath(`/api/garage-bookings/${slotBooking.id}/schedule`),
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              bookingDate: slotDate,
+              bookingTime: slotTime,
+              vehicleYear: selectedVehicle.year,
+              vehicleMake: selectedVehicle.make,
+              vehicleModel: selectedVehicle.model,
+              vehicleVin: selectedVehicle.vin,
+            }),
+          },
+        );
+
+        if (!response.ok) {
+          const payload = (await response.json().catch(() => null)) as
+            | { message?: string }
+            | null;
+          setError(payload?.message ?? "Unable to schedule service slot");
+          return;
+        }
+
+        toast.success("Service slot selected");
+        setSlotBooking(null);
         router.refresh();
       } catch {
         setError("Unable to reach the server. Please try again.");
@@ -332,6 +534,44 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                 </p>
               </div>
 
+              {selectedOrder.garageBookings.length ? (
+                <div className="space-y-3 rounded-sm border border-border bg-brand-surface p-4">
+                  <p className="font-semibold text-foreground">Garage service</p>
+                  {selectedOrder.garageBookings.map((booking) => (
+                    <div
+                      key={booking.id}
+                      className="flex flex-col gap-3 rounded-sm border border-border bg-brand-panel p-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {booking.serviceName}
+                        </p>
+                        <p className="mt-1 text-sm text-brand-muted">
+                          {garageName(booking)} | {booking.currency}{" "}
+                          {booking.price.toFixed(2)}
+                        </p>
+                        <p className="mt-1 text-sm text-brand-muted">
+                          {booking.bookingDate && booking.bookingTime
+                            ? `${new Date(`${booking.bookingDate}T12:00:00`).toLocaleDateString("en-AE")} at ${booking.bookingTime}`
+                            : bookingStatusLabel(booking.status)}
+                        </p>
+                      </div>
+                      {booking.canSelectSlot ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => openSlotPicker(booking)}
+                          className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
+                        >
+                          <CalendarClock className="mr-2 h-4 w-4" />
+                          Select slot
+                        </Button>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
               <div className="space-y-3">
                 <p className="font-semibold text-foreground">Items</p>
                 {selectedOrder.items.map((item, index) => (
@@ -477,6 +717,135 @@ export function OrdersTable({ orders }: OrdersTableProps) {
               className="rounded-sm bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {isPending ? "Saving..." : "Save review"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(slotBooking)}
+        onOpenChange={(open) => {
+          if (!open) setSlotBooking(null);
+        }}
+      >
+        <DialogContent className="border-border bg-brand-panel text-foreground sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select service slot</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-5">
+            <div className="grid gap-2">
+              <p className="text-sm font-medium text-foreground">Car</p>
+              {isLoadingVehicles ? (
+                <p className="rounded-sm border border-border bg-background px-3 py-2 text-sm text-brand-muted">
+                  Loading cars...
+                </p>
+              ) : vehicles.length ? (
+                <div className="grid gap-2">
+                  {vehicles.map((vehicle) => (
+                    <button
+                      key={vehicle.id}
+                      type="button"
+                      onClick={() => setSelectedVehicleId(vehicle.id)}
+                      className={`rounded-sm border px-3 py-2 text-left text-sm transition-colors ${
+                        selectedVehicleId === vehicle.id
+                          ? "border-primary bg-primary/10 text-foreground"
+                          : "border-border bg-background text-brand-muted hover:border-primary/60"
+                      }`}
+                    >
+                      <span className="block font-medium text-foreground">
+                        {[vehicle.year, vehicle.make, vehicle.model]
+                          .filter(Boolean)
+                          .join(" ")}
+                      </span>
+                      <span className="block text-xs">{vehicle.vin}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-sm border border-border bg-background px-3 py-2 text-sm text-brand-muted">
+                  Add a car in My Vehicles before selecting a service slot.
+                </p>
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <p className="text-sm font-medium text-foreground">Available date</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {dateOptions.map((date) => (
+                  <button
+                    key={date.value}
+                    type="button"
+                    onClick={() => {
+                      setUnavailableTimes([]);
+                      setSlotTime("");
+                      setIsLoadingAvailability(Boolean(slotBooking?.serviceId));
+                      setSlotDate(date.value);
+                    }}
+                    className={`h-10 rounded-sm border px-3 text-sm transition-colors ${
+                      slotDate === date.value
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-brand-muted hover:border-primary/60"
+                    }`}
+                  >
+                    {date.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <p className="text-sm font-medium text-foreground">Available slots</p>
+              {isLoadingAvailability ? (
+                <p className="rounded-sm border border-border bg-background px-3 py-2 text-sm text-brand-muted">
+                  Loading slots...
+                </p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {slotTimes
+                    .filter((time) => !unavailableTimes.includes(time))
+                    .map((time) => (
+                      <button
+                        key={time}
+                        type="button"
+                        onClick={() => setSlotTime(time)}
+                        className={`h-10 rounded-sm border px-2 text-sm transition-colors ${
+                          slotTime === time
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-background text-brand-muted hover:border-primary/60"
+                        }`}
+                      >
+                        {time}
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
+            {error ? (
+              <p className="rounded-sm border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {error}
+              </p>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSlotBooking(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={
+                isPending ||
+                !slotTime ||
+                !selectedVehicleId ||
+                isLoadingAvailability ||
+                isLoadingVehicles
+              }
+              onClick={submitSlot}
+            >
+              {isPending ? "Saving..." : "Confirm slot"}
             </Button>
           </DialogFooter>
         </DialogContent>

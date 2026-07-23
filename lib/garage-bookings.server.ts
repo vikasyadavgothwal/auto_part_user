@@ -3,7 +3,12 @@ import { cookies } from "next/headers"
 import type { Booking } from "@/components/dashboard/bookings/bookings-table"
 import { requestBackend } from "@/lib/auth/backend"
 
-type GarageBookingStatus = "pending" | "confirmed" | "completed" | "cancelled"
+type GarageBookingStatus =
+  | "pending"
+  | "pending_slot_selection"
+  | "confirmed"
+  | "completed"
+  | "cancelled"
 
 export type UserGarageBookingRecord = {
   id: string
@@ -20,12 +25,14 @@ export type UserGarageBookingRecord = {
   vehicleModel: string | null
   vehicleVin: string | null
   notes: string | null
-  bookingDate: string
-  bookingTime: string
+  bookingDate: string | null
+  bookingTime: string | null
   durationMinutes: number
   price: number
   currency: string
   status: GarageBookingStatus
+  linkedOrderId: string | null
+  canSelectSlot?: boolean
   garageName: string | null
   reviewId: string | null
   reviewRating: number | null
@@ -41,7 +48,16 @@ type UserGarageBookingsPayload = {
   message?: string
 }
 
-const formatDate = (value: string) =>
+const formatDate = (value: string | null) =>
+  value
+    ? new Date(`${value}T12:00:00`).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "Select after delivery"
+
+const formatScheduledDate = (value: string) =>
   new Date(`${value}T12:00:00`).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -57,7 +73,9 @@ const formatMoney = (amount: number, currency: string) =>
   `${currency} ${(amount / 100).toFixed(2)}`
 
 const statusLabel = (status: GarageBookingStatus) =>
-  status.slice(0, 1).toUpperCase() + status.slice(1)
+  status === "pending_slot_selection"
+    ? "Awaiting slot selection"
+    : status.slice(0, 1).toUpperCase() + status.slice(1)
 
 const badgeClass = (status: GarageBookingStatus) => {
   if (status === "completed") {
@@ -65,6 +83,9 @@ const badgeClass = (status: GarageBookingStatus) => {
   }
   if (status === "cancelled") {
     return "border-primary/20 bg-primary/10 text-primary hover:bg-primary/10"
+  }
+  if (status === "pending_slot_selection") {
+    return "border-brand-warning/20 bg-brand-warning/10 text-brand-warning hover:bg-brand-warning/10"
   }
   return "border-brand-info/20 bg-brand-info/10 text-brand-info hover:bg-brand-info/10"
 }
@@ -89,13 +110,14 @@ export function mapUserGarageBookings(bookings: UserGarageBookingRecord[]) {
       backendId: booking.id,
       serviceId: booking.serviceId,
       date: formatDate(booking.bookingDate),
-      time: booking.bookingTime,
+      time: booking.bookingTime ?? "Select after delivery",
       garage: booking.garageName || "Garage",
       service: booking.serviceName,
       vehicle: formatVehicle(booking),
       price: formatMoney(booking.price, booking.currency),
       status: statusLabel(booking.status),
       rawStatus: booking.status,
+      canSelectSlot: Boolean(booking.canSelectSlot),
       badgeClass: badgeClass(booking.status),
       reviewId: booking.reviewId,
       reviewRating: booking.reviewRating,
@@ -107,7 +129,10 @@ export function mapUserGarageBookings(bookings: UserGarageBookingRecord[]) {
 
 export function buildUserBookingStats(bookings: UserGarageBookingRecord[]) {
   const upcoming = bookings.filter(
-    (booking) => booking.status === "pending" || booking.status === "confirmed",
+    (booking) =>
+      booking.status === "pending" ||
+      booking.status === "pending_slot_selection" ||
+      booking.status === "confirmed",
   )
   const completed = bookings.filter((booking) => booking.status === "completed")
   const spent = bookings.reduce((total, booking) => total + booking.price, 0)
@@ -121,7 +146,10 @@ export function buildUserBookingStats(bookings: UserGarageBookingRecord[]) {
 
 export function buildNextAppointment(bookings: UserGarageBookingRecord[]) {
   const upcoming = bookings.find(
-    (booking) => booking.status === "pending" || booking.status === "confirmed",
+    (booking) =>
+      booking.status === "pending" ||
+      booking.status === "pending_slot_selection" ||
+      booking.status === "confirmed",
   )
 
   if (!upcoming) {
@@ -134,7 +162,9 @@ export function buildNextAppointment(bookings: UserGarageBookingRecord[]) {
 
   return {
     service: upcoming.serviceName,
-    dateTime: `${formatDate(upcoming.bookingDate)}, ${upcoming.bookingTime}`,
+    dateTime: upcoming.bookingDate && upcoming.bookingTime
+      ? `${formatScheduledDate(upcoming.bookingDate)}, ${upcoming.bookingTime}`
+      : "Slot selection after part delivery",
     garage: upcoming.garageName || "Garage",
   }
 }

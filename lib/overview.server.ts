@@ -232,13 +232,14 @@ function buildNextBookingLabel(bookings: UserGarageBookingRecord[]) {
   const nextBooking = bookings
     .filter(
       (booking) =>
-        booking.status === "pending" || booking.status === "confirmed",
+        (booking.status === "pending" || booking.status === "confirmed") &&
+        booking.bookingDate,
     )
     .sort((current, next) => bookingSortValue(current) - bookingSortValue(next))[0]
 
   if (!nextBooking) return "No upcoming service"
   return `${nextBooking.serviceName} on ${formatBookingDate(
-    nextBooking.bookingDate,
+    nextBooking.bookingDate ?? "",
   )}`
 }
 

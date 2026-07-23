@@ -32,9 +32,9 @@ NEXT_PUBLIC_FIREBASE_VAPID_KEY=
 NEXT_PUBLIC_MAIN_WEBSITE_URL=https://websitedesignersdubai.ae
 ```
 
-During local development, links back to marketplace products and service
-booking use `http://localhost:3001` even if a deployed website URL is present
-in the environment. Production continues using `NEXT_PUBLIC_MAIN_WEBSITE_URL`.
+Links back to the main marketplace use `NEXT_PUBLIC_MAIN_WEBSITE_URL`, then
+`NEXT_PUBLIC_SITE_URL`. If neither is configured, dashboard links remain
+same-origin so server render and client hydration use the same URL.
 
 Use the same Firebase web application values as `auto-parts-pro-user`. If the
 Firebase values are omitted, login falls back to backend-managed email and
