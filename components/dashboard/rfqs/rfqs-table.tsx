@@ -111,6 +111,19 @@ const expiryLabel = (rfq: UserRfq) => {
   return `${days} day${days === 1 ? "" : "s"}`
 }
 
+const quoteCountLabel = (rfq: UserRfq) => {
+  if (rfq.quoteWindowActive) return "Ranking in progress"
+  return `${rfq.bids.length} shown`
+}
+
+const quoteWindowMessage = (rfq: UserRfq) => {
+  if (!rfq.quoteWindowActive) return null
+  const endsAt = rfq.quoteWindowEndsAt
+    ? new Date(rfq.quoteWindowEndsAt).toLocaleString("en-AE")
+    : "the quote window closes"
+  return `Suppliers are quoting. Top five quotes will be shown after ${endsAt}.`
+}
+
 const addressOptionLabel = (address: UserAddressRecord) =>
   `${address.label}${address.isDefault ? " (Default)" : ""} - ${address.city}, ${address.postalCode}`
 
@@ -326,7 +339,7 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
                     </TableCell>
                     <TableCell className="px-6 py-4 text-sm text-brand-muted">
                       <span className="font-semibold text-primary">
-                        {rfq.bids.length} received
+                        {quoteCountLabel(rfq)}
                       </span>
                     </TableCell>
                     <TableCell className="px-6 py-4 text-sm text-brand-muted">
@@ -393,7 +406,7 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
               {selected?.description || "Review all supplier quotations and select the best offer."}
             </DialogDescription>
           </DialogHeader>
-          {selected ? (
+              {selected ? (
             <div className="space-y-6">
               <div className="grid gap-3 rounded-sm border border-border bg-brand-surface p-4 text-sm md:grid-cols-2">
                 {new Set(selected.parts.map((part) => part.vehicleVin).filter(Boolean)).size <= 1 ? <><p>
@@ -417,7 +430,8 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
               </div>
 
               <div>
-                <div className="mb-3 flex items-center justify-between gap-3"><h3 className="font-semibold text-foreground">Requested parts</h3><span className="text-sm text-brand-muted">Supplier quotations ({selected.bids.length})</span></div>
+                <div className="mb-3 flex items-center justify-between gap-3"><h3 className="font-semibold text-foreground">Requested parts</h3><span className="text-sm text-brand-muted">Supplier quotations ({quoteCountLabel(selected)})</span></div>
+                {quoteWindowMessage(selected) ? <p className="mb-3 rounded-sm border border-border bg-brand-surface p-3 text-sm text-brand-muted">{quoteWindowMessage(selected)}</p> : null}
                 <div className="overflow-x-auto rounded-sm border border-border">
                   <table className="w-full min-w-[760px] text-sm">
                     <thead className="bg-brand-surface text-brand-muted">
@@ -427,7 +441,7 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
                     <tbody>{selected.parts.map((part) => <tr key={part.id} className="border-t border-border"><td className="p-3 font-mono text-xs">{part.vehicleVin || selected.vehicleVin || "-"}</td><td className="p-3 font-medium">{part.partName}</td><td className="p-3">{part.partNumber || "-"}</td><td className="p-3">{part.quantity}</td><td className="p-3">{part.targetPrice === null ? "-" : money(part.targetPrice)}</td>{selected.bids.map((bid) => { const item = bid.items.find((entry) => entry.rfqPartId === part.id); return <Fragment key={bid.id}><td className="border-l border-border p-3">{item?.partType || "Pending"}</td><td className="p-3">{item ? deliveryOptionLabel(item.deliveryOption) : "-"}</td><td className="p-3 text-right">{item ? money(item.unitPrice) : "-"}</td><td className="p-3 text-right font-medium">{item ? money(item.lineTotal) : "-"}</td></Fragment> })}</tr>)}</tbody>
                   </table>
                 </div>
-                {!selected.bids.length ? <p className="border-x border-b border-border p-4 text-sm text-brand-muted">No supplier quotations received yet.</p> : null}
+                {!selected.bids.length ? <p className="border-x border-b border-border p-4 text-sm text-brand-muted">{quoteWindowMessage(selected) ?? "No ranked supplier quotations are available yet."}</p> : null}
               </div>
 
               {!selected.order && selected.status === "open"

@@ -45,6 +45,8 @@ export type UserRfq = {
   attachmentUrl: string | null
   attachmentName: string | null
   createdAt: string
+  quoteWindowEndsAt: string | null
+  quoteWindowActive: boolean
   parts: Array<{
     id: string
     vehicleVin: string | null
