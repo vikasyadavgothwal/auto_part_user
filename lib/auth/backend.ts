@@ -7,7 +7,14 @@ export function getBackendUrl(path: string): URL {
     process.env.ADMIN_API_BASE_URL?.trim() ||
     process.env.BACKEND_URL?.trim() ||
     process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL?.trim() ||
-    DEFAULT_BACKEND_URL
+    (process.env.NODE_ENV === "production" ? "" : DEFAULT_BACKEND_URL)
+
+  if (!baseUrl) {
+    throw new Error(
+      "Missing backend API URL. Set ADMIN_API_BASE_URL, BACKEND_URL, or NEXT_PUBLIC_ADMIN_API_BASE_URL.",
+    )
+  }
+
   return new URL(path, baseUrl)
 }
 
