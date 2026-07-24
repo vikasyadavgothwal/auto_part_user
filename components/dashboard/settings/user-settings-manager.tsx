@@ -634,6 +634,23 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
 
     setIsSendingOtp(true);
     try {
+      const checkResponse = await authenticatedFetch(
+        withBasePath("/api/settings/mobile-otp/check"),
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ phone: normalizedPhone }),
+        },
+      );
+      const checkPayload = (await checkResponse.json().catch(() => null)) as {
+        message?: string;
+      } | null;
+      if (!checkResponse.ok) {
+        throw new Error(
+          checkPayload?.message || "Unable to check mobile number",
+        );
+      }
+
       const provider = new PhoneAuthProvider(getFirebaseAuth());
       let verificationId: string;
       try {
