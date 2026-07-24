@@ -2,6 +2,7 @@ import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { mainWebsiteUrl } from "@/lib/main-website-url"
 
 type Appointment = {
   service: string
@@ -18,6 +19,8 @@ export function BookingSummaryCards({
   nextAppointment,
   popularServices,
 }: BookingSummaryCardsProps) {
+  const servicesUrl = `${mainWebsiteUrl()}/services`
+
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
       <Card className="rounded-sm border border-border bg-brand-panel">
@@ -63,7 +66,7 @@ export function BookingSummaryCards({
             {popularServices.map((service) => (
               <Link
                 key={service}
-                href="/services"
+                href={servicesUrl}
                 className="flex items-center justify-between rounded-sm bg-brand-surface p-3 transition-all hover:border hover:border-primary"
               >
                 <span className="text-sm text-foreground">{service}</span>

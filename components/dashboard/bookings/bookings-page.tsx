@@ -6,7 +6,7 @@ import { bookingStats, bookings } from "@/components/dashboard/bookings/bookings
 import { BookingsTable } from "@/components/dashboard/bookings/bookings-table"
 import type { Booking } from "@/components/dashboard/bookings/bookings-table"
 import { Button } from "@/components/ui/button"
-import { getMainWebsiteUrl } from "@/lib/saved-parts"
+import { mainWebsiteUrl } from "@/lib/main-website-url"
 
 type BookingsPageProps = {
   bookingRows?: Booking[]
@@ -17,7 +17,7 @@ export function BookingsPage({
   bookingRows = bookings,
   stats = bookingStats,
 }: BookingsPageProps) {
-  const servicesUrl = `${getMainWebsiteUrl()}/services`
+  const servicesUrl = `${mainWebsiteUrl()}/services`
   return (
     <div className="min-w-0 space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
