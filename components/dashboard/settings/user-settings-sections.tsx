@@ -188,14 +188,14 @@ export function ContactVerificationSection({
               }
               className="h-11 w-36 shrink-0 rounded-l-sm border border-[#2A2A2A] bg-[#0A0A0A] px-3 text-sm text-white outline-none transition-colors focus-visible:border-[#DC2626]"
             >
-              {mobileCountryCodes.map((country) => (
-                <option
-                  key={`${country.code}-${country.label}`}
-                  value={country.code}
-                >
-                  {country.code} {country.label}
-                </option>
-              ))}
+                {mobileCountryCodes.map((country) => (
+                  <option
+                    key={`${country.code}-${country.label}`}
+                    value={country.code}
+                  >
+                    {country.code}
+                  </option>
+                ))}
             </select>
             <Input
               id="user-mobile"

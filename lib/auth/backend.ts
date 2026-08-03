@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
 
 const DEFAULT_BACKEND_URL = "http://localhost:3000"
+const DEFAULT_BACKEND_TIMEOUT_MS = 10_000
+
+const timeoutSignal = () => AbortSignal.timeout(DEFAULT_BACKEND_TIMEOUT_MS)
 
 export function getBackendUrl(path: string): URL {
   const baseUrl =
@@ -92,6 +95,7 @@ export async function requestBackend(
     cache: "no-store",
     headers,
     body: options.body,
+    signal: timeoutSignal(),
   })
 }
 
@@ -118,6 +122,7 @@ export async function forwardBackendRequest(
     cache: "no-store",
     headers,
     body: method === "GET" || method === "HEAD" ? undefined : await request.arrayBuffer(),
+    signal: timeoutSignal(),
   })
 
   const response = new Response(await backend.arrayBuffer(), {

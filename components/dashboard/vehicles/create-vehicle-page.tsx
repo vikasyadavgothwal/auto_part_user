@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, CarFront } from "lucide-react"
+import { toast } from "sonner"
 
 import { VehicleForm } from "@/components/vehicle-form"
 import { Button } from "@/components/ui/button"
@@ -45,10 +46,13 @@ export function CreateVehiclePage() {
         "Unable to create vehicle",
         { ok: true },
       )
+      toast.success("Vehicle created successfully")
       router.push(appRoutes.vehicles)
       router.refresh()
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to create vehicle")
+      const message = caught instanceof Error ? caught.message : "Unable to create vehicle"
+      setError(message)
+      toast.error(message)
     } finally {
       setPending(false)
     }

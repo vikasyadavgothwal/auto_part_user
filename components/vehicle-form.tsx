@@ -180,7 +180,6 @@ export function VehicleForm({
             <Input
               id="vehicle-vin"
               placeholder="JT2BF22K6X0123456"
-              required
               value={values.vin}
               maxLength={17}
               aria-invalid={Boolean(errors.vin)}
@@ -219,7 +218,6 @@ export function VehicleForm({
             inputMode="numeric"
             maxLength={4}
             placeholder="2019"
-            required
             value={values.year}
             aria-invalid={Boolean(errors.year)}
             readOnly={Boolean(onVinLookup && !manualEntry)}
@@ -236,7 +234,6 @@ export function VehicleForm({
           <Input
             id="vehicle-make"
             placeholder="Toyota"
-            required
             value={values.make}
             maxLength={80}
             aria-invalid={Boolean(errors.make)}
@@ -252,7 +249,6 @@ export function VehicleForm({
           <Input
             id="vehicle-model"
             placeholder="Camry"
-            required
             value={values.model}
             maxLength={80}
             aria-invalid={Boolean(errors.model)}
@@ -270,7 +266,6 @@ export function VehicleForm({
           <Input
             id="vehicle-vin"
             placeholder="JT2BF22K6X0123456"
-            required
             value={values.vin}
             maxLength={17}
             aria-invalid={Boolean(errors.vin)}
@@ -286,7 +281,6 @@ export function VehicleForm({
             id="vehicle-mileage"
             inputMode="numeric"
             placeholder="45234"
-            required
             value={values.mileage}
             maxLength={7}
             aria-invalid={Boolean(errors.mileage)}

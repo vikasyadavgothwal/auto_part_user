@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 import { RfqAddressSection } from "@/components/dashboard/rfqs/rfq-address-section"
 import { RfqAttachmentsSection } from "@/components/dashboard/rfqs/rfq-attachments-section"
@@ -392,7 +393,9 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
 
   function addPart() {
     if (parts.length >= maxParts) {
-      setSubmitError(`An RFQ can include up to ${maxParts} parts.`)
+      const message = `An RFQ can include up to ${maxParts} parts.`
+      setSubmitError(message)
+      toast.error(message)
       return
     }
     setSubmitError("")
@@ -420,8 +423,11 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
       setImportedVehicles(result.vehicles ?? [])
       setParts(result.parts.map((part, index) => ({ ...part, id: Date.now() + index, notes: "" })))
       setFieldErrors({})
+      toast.success("RFQ file imported successfully")
     } catch (caught) {
-      setSubmitError(caught instanceof Error ? caught.message : "Unable to import RFQ file")
+      const message = caught instanceof Error ? caught.message : "Unable to import RFQ file"
+      setSubmitError(message)
+      toast.error(message)
     } finally {
       setIsImporting(false)
     }
@@ -449,13 +455,22 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
     const errors = step === 1 ? validateParts() : validateDetails()
     setFieldErrors(errors)
     if (Object.keys(errors).length) {
-      setSubmitError("Fix the highlighted fields before continuing.")
+      const message = "Fix the highlighted fields before continuing."
+      setSubmitError(message)
+      toast.error(message)
       return
     }
     setSubmitError("")
     if (step === 1) {
       setIsImporting(true)
-      try { await resolveManualVins(); setStep(2) } catch (caught) { setSubmitError(caught instanceof Error ? caught.message : "Unable to validate VIN") }
+      try {
+        await resolveManualVins()
+        setStep(2)
+      } catch (caught) {
+        const message = caught instanceof Error ? caught.message : "Unable to validate VIN"
+        setSubmitError(message)
+        toast.error(message)
+      }
       finally { setIsImporting(false) }
     }
     if (step === 2) setStep(3)
@@ -472,7 +487,9 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
     setFieldErrors(errors)
     if (Object.keys(errors).length) {
       setStep(firstStepForErrors(errors))
-      setSubmitError("Fix the highlighted fields before submitting.")
+      const message = "Fix the highlighted fields before submitting."
+      setSubmitError(message)
+      toast.error(message)
       return
     }
 
@@ -533,10 +550,13 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
       const created = result.rfq?.publicId
         ? `?created=${encodeURIComponent(result.rfq.publicId)}`
         : "?created=1"
+      toast.success("RFQ created successfully")
       router.push(`${appRoutes.rfqs}${created}`)
       router.refresh()
     } catch (caught) {
-      setSubmitError(caught instanceof Error ? caught.message : "Unable to submit RFQ")
+      const message = caught instanceof Error ? caught.message : "Unable to submit RFQ"
+      setSubmitError(message)
+      toast.error(message)
     } finally {
       setIsSubmitting(false)
     }
