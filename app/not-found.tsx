@@ -5,27 +5,28 @@ import { ArrowLeft, House, SearchX } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { appRoutes, withBasePath } from "@/lib/routes";
 
 const helpfulLinks = [
   {
     title: "Browse Parts",
-    description: "Search for auto parts by make and model",
-    href: "/search",
+    description: "Review saved marketplace parts",
+    href: appRoutes.parts,
   },
   {
     title: "Find Services",
-    description: "Book mechanics and garages near you",
-    href: "/services",
+    description: "View your garage bookings",
+    href: appRoutes.bookings,
   },
   {
     title: "Request Quote",
     description: "Get competitive quotes from suppliers",
-    href: "/rfq",
+    href: appRoutes.createRfq,
   },
   {
-    title: "Fleet Dashboard",
-    description: "Manage your fleet and procurement",
-    href: "/fleet/dashboard",
+    title: "Vehicles",
+    description: "Manage your saved vehicles",
+    href: appRoutes.vehicles,
   },
 ];
 
@@ -66,7 +67,7 @@ export default function NotFoundPage() {
               asChild
               className="gap-2 bg-[#DC2626] px-6 py-3 text-white hover:bg-[#B91C1C]"
             >
-              <Link href="/">
+              <Link href={withBasePath(appRoutes.overview)}>
                 <House className="h-5 w-5" />
                 Go Home
               </Link>
@@ -83,7 +84,7 @@ export default function NotFoundPage() {
                 {helpfulLinks.map((item) => (
                   <Link
                     key={item.title}
-                    href={item.href}
+                    href={withBasePath(item.href)}
                     className="group rounded-sm border border-[#2A2A2A] bg-[#0A0A0A] p-4 transition-all hover:border-[#DC2626]"
                   >
                     <h4 className="mb-1 font-semibold text-white transition-colors group-hover:text-[#DC2626]">

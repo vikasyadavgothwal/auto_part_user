@@ -49,7 +49,16 @@ Logged-in customer dashboard for bookings, orders, parts, RFQs, vehicles, settin
 - Bookings, orders, parts, RFQs, vehicles, settings, and login pages render
 - Auth cookies are handled through backend routes
 - User flow changes are checked against public site and admin APIs
-- Run the commands documented in this app README when relevant.
+- Preferred validation: `pnpm lint`, `pnpm exec tsc --noEmit`, and `pnpm build` when relevant.
 - Update project root `docs/AI_HANDOFF.md` after major changes.
+
+### App-Specific Boundaries
+
+- Do not add supplier, garage, fleet, admin, plan-management, or custom-role business rules here.
+- User dashboard visibility should follow backend-provided identity, ownership, role, permission, and plan information.
+
+### Visual Design Rule
+
+- For any new UI feature (buttons, inputs, selects, modals, tables, cards, and similar controls), use the existing ShadCN UI components and keep spacing, type scale, colors, and interaction patterns aligned with the current app design language.
 
 <!-- END:autoparts-pro-codex-docs -->

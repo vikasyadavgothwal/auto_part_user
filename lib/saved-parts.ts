@@ -12,6 +12,8 @@ export type SavedPartRecord = {
   minPrice: number | null
   currency: string
   savedAt: string
+  watchForPriceDrops: boolean
+  watchForStockReturns: boolean
 }
 
 export const getMainWebsiteUrl = () => {
@@ -48,6 +50,16 @@ export const buildSavedPartStats = (parts: SavedPartRecord[]) => [
     value: `AED ${parts
       .reduce((total, part) => total + (part.minPrice ?? 0), 0)
       .toFixed(2)}`,
+    showIcon: false,
+  },
+  {
+    title: "Price Watch",
+    value: String(parts.filter((part) => part.watchForPriceDrops).length),
+    showIcon: false,
+  },
+  {
+    title: "Stock Watch",
+    value: String(parts.filter((part) => part.watchForStockReturns).length),
     showIcon: false,
   },
 ]

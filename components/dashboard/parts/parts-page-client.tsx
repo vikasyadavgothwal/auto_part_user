@@ -50,6 +50,19 @@ export function PartsPageClient({
             current.filter((part) => part.partUid !== partUid),
           )
         }
+        onWatchUpdate={(partUid, watch) =>
+          setParts((current) =>
+            current.map((part) =>
+              part.partUid === partUid
+                ? {
+                    ...part,
+                    watchForPriceDrops: watch.watchForPriceDrops,
+                    watchForStockReturns: watch.watchForStockReturns,
+                  }
+                : part,
+            ),
+          )
+        }
       />
     </div>
   )

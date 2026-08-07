@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { ExternalLink, Package, Trash2 } from "lucide-react"
 
+import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -17,10 +18,19 @@ import {
 type SavedPartsGridProps = {
   parts: SavedPartRecord[]
   onRemove: (partUid: string) => void
+  onWatchUpdate: (
+    partUid: string,
+    data: { watchForPriceDrops: boolean; watchForStockReturns: boolean },
+  ) => void
 }
 
-export function SavedPartsGrid({ parts, onRemove }: SavedPartsGridProps) {
+export function SavedPartsGrid({
+  parts,
+  onRemove,
+  onWatchUpdate,
+}: SavedPartsGridProps) {
   const [removingPartUid, setRemovingPartUid] = useState<string | null>(null)
+  const [updatingPartUid, setUpdatingPartUid] = useState<string | null>(null)
 
   const removePart = async (partUid: string) => {
     if (removingPartUid) return
@@ -34,6 +44,30 @@ export function SavedPartsGrid({ parts, onRemove }: SavedPartsGridProps) {
       if (response.ok) onRemove(partUid)
     } finally {
       setRemovingPartUid(null)
+    }
+  }
+
+  const updateWatchers = async (input: {
+    partUid: string
+    watchForPriceDrops: boolean
+    watchForStockReturns: boolean
+  }) => {
+    if (updatingPartUid) return
+    setUpdatingPartUid(input.partUid)
+    try {
+      const response = await authenticatedFetch(withBasePath("/api/saved-parts"), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(input),
+      })
+      if (response.ok) {
+        onWatchUpdate(input.partUid, {
+          watchForPriceDrops: input.watchForPriceDrops,
+          watchForStockReturns: input.watchForStockReturns,
+        })
+      }
+    } finally {
+      setUpdatingPartUid(null)
     }
   }
 
@@ -121,6 +155,38 @@ export function SavedPartsGrid({ parts, onRemove }: SavedPartsGridProps) {
                   View
                 </a>
               </Button>
+            </div>
+
+            <div className="mt-4 space-y-2 border-t border-border pt-4">
+              <label className="flex items-center gap-2 text-sm text-brand-muted">
+                <Checkbox
+                  checked={part.watchForPriceDrops}
+                  disabled={Boolean(updatingPartUid)}
+                  onCheckedChange={(checked) =>
+                    void updateWatchers({
+                      partUid: part.partUid,
+                      watchForPriceDrops: Boolean(checked),
+                      watchForStockReturns: part.watchForStockReturns,
+                    })
+                  }
+                />
+                <span>Watch for lower price</span>
+              </label>
+
+              <label className="flex items-center gap-2 text-sm text-brand-muted">
+                <Checkbox
+                  checked={part.watchForStockReturns}
+                  disabled={Boolean(updatingPartUid)}
+                  onCheckedChange={(checked) =>
+                    void updateWatchers({
+                      partUid: part.partUid,
+                      watchForPriceDrops: part.watchForPriceDrops,
+                      watchForStockReturns: Boolean(checked),
+                    })
+                  }
+                />
+                <span>Watch for stock return</span>
+              </label>
             </div>
           </CardContent>
         </Card>
