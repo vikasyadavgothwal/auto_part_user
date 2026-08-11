@@ -6,17 +6,16 @@ import { refreshDashboardSession } from "@/lib/auth/client"
 
 export function SessionKeepalive() {
   useEffect(() => {
-    let lastRefresh = 0
+    let lastRefresh = Date.now()
 
     const refreshIfActive = () => {
       if (document.visibilityState === "hidden") return
       const now = Date.now()
       if (now - lastRefresh < 60_000) return
       lastRefresh = now
-      void refreshDashboardSession()
+      void refreshDashboardSession().catch(() => false)
     }
 
-    refreshIfActive()
     window.addEventListener("focus", refreshIfActive)
     document.addEventListener("visibilitychange", refreshIfActive)
 

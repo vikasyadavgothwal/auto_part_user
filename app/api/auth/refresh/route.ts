@@ -11,15 +11,27 @@ import { appRoutes, withBasePath } from "@/lib/routes"
 
 export const dynamic = "force-dynamic"
 
+const AUTH_REFRESH_TIMEOUT_MS = 4_000
+
 async function refresh(request: NextRequest): Promise<{
   response: NextResponse
   ok: boolean
 }> {
   const currentCookies = request.headers.get("cookie")
+  if (!currentCookies) {
+    return {
+      response: NextResponse.json(
+        { ok: false, success: false, message: "Session expired" },
+        { status: 401 },
+      ),
+      ok: false,
+    }
+  }
   const backendRefresh = await requestBackend("/api/v1/user/auth/refresh", {
     method: "POST",
     cookieHeader: currentCookies,
     userAgent: request.headers.get("user-agent"),
+    timeoutMs: AUTH_REFRESH_TIMEOUT_MS,
   })
   const refreshCookies = getSetCookieHeaders(backendRefresh.headers)
 
@@ -35,6 +47,7 @@ async function refresh(request: NextRequest): Promise<{
   const rotatedCookieHeader = mergeCookieHeader(currentCookies, refreshCookies)
   const sessionResponse = await requestBackend("/api/v1/user/auth/me", {
     cookieHeader: rotatedCookieHeader,
+    timeoutMs: AUTH_REFRESH_TIMEOUT_MS,
   })
   const sessionPayload = (await sessionResponse.json()) as AuthApiPayload
 

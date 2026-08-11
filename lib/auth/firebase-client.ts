@@ -1,7 +1,9 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import {
   getAuth,
+  inMemoryPersistence,
   reload,
+  setPersistence,
   signInWithEmailAndPassword,
   signOut,
   type Auth,
@@ -50,9 +52,11 @@ export function getFirebaseAuthDiagnostics() {
 export async function createFirebaseLoginPayload(
   email: string,
   password: string,
-): Promise<{ firebaseIdToken: string; installationId: string }> {
+): Promise<{ firebaseIdToken: string }> {
+  const auth = getFirebaseAuth();
+  await setPersistence(auth, inMemoryPersistence);
   const credential = await signInWithEmailAndPassword(
-    getFirebaseAuth(),
+    auth,
     email,
     password,
   );
@@ -62,17 +66,10 @@ export async function createFirebaseLoginPayload(
     throw new Error("Verify your email before signing in.");
   }
 
-  const installationKey = "auto-parts-pro-installation-id";
-  let installationId = window.localStorage.getItem(installationKey);
-  if (!installationId) {
-    installationId = crypto.randomUUID();
-    window.localStorage.setItem(installationKey, installationId);
-  }
+  const firebaseIdToken = await credential.user.getIdToken(true);
+  await signOut(auth).catch(() => undefined);
 
-  return {
-    firebaseIdToken: await credential.user.getIdToken(true),
-    installationId,
-  };
+  return { firebaseIdToken };
 }
 
 export async function signOutFirebaseUser(): Promise<void> {

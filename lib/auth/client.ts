@@ -12,6 +12,7 @@ export async function refreshDashboardSession(): Promise<boolean> {
       cache: "no-store",
     })
       .then((response) => response.ok)
+      .catch(() => false)
       .finally(() => {
         refreshRequest = null
       })
