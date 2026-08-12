@@ -1,12 +1,158 @@
 import { NextResponse } from "next/server"
-import {
-  DEFAULT_PROXY_TIMEOUT_MS,
-  fetchWithTimeout,
-  getBackendBaseUrl,
-  getSetCookieHeaders as getSetCookieHeadersShared,
-  mergeCookieHeader as mergeCookieHeaderShared,
-  streamBackendRequest,
-} from "@shared/backend-proxy"
+
+const DEFAULT_PROXY_TIMEOUT_MS = 10_000
+
+type TimeoutRequestInit = RequestInit & {
+  timeoutMs?: number
+}
+
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: TimeoutRequestInit = {},
+): Promise<Response> {
+  const { timeoutMs = DEFAULT_PROXY_TIMEOUT_MS, signal, ...requestInit } = init
+  if (signal) {
+    return fetch(input, { ...requestInit, signal })
+  }
+
+  const controller = new AbortController()
+  const timeout = setTimeout(
+    () => controller.abort(new Error("Backend request timed out")),
+    timeoutMs,
+  )
+
+  try {
+    return await fetch(input, { ...requestInit, signal: controller.signal })
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+const parseCookieHeader = (header: string | null) => {
+  const cookies = new Map<string, string>()
+
+  for (const segment of header?.split(";") ?? []) {
+    const trimmed = segment.trim()
+    const index = trimmed.indexOf("=")
+    if (index > 0) {
+      cookies.set(trimmed.slice(0, index).trim(), trimmed.slice(index + 1).trim())
+    }
+  }
+
+  return cookies
+}
+
+const encodeCookies = (cookies: Map<string, string>) =>
+  Array.from(cookies, ([name, value]) => `${name}=${value}`).join("; ")
+
+const getBackendBaseUrl = ({
+  envNames,
+  fallback,
+  missingMessage,
+}: {
+  envNames: readonly string[]
+  fallback?: string
+  missingMessage: string
+}) => {
+  for (const name of envNames) {
+    const value = process.env[name]?.trim()
+    if (value) return value
+  }
+
+  if (fallback !== undefined && process.env.NODE_ENV !== "production") {
+    return fallback
+  }
+
+  throw new Error(missingMessage)
+}
+
+const getSetCookieHeadersShared = (headers: Headers): string[] => {
+  const enhancedHeaders = headers as Headers & {
+    getSetCookie?: () => string[]
+  }
+  const values = enhancedHeaders.getSetCookie?.()
+  if (values?.length) return values
+
+  const combinedValue = headers.get("set-cookie")
+  return combinedValue ? [combinedValue] : []
+}
+
+const mergeCookieHeaderShared = (
+  currentHeader: string | null,
+  setCookieValues: string[],
+) => {
+  const cookies = parseCookieHeader(currentHeader)
+
+  for (const setCookie of setCookieValues) {
+    const pair = setCookie.split(";", 1)[0]
+    const index = pair.indexOf("=")
+    if (index > 0) {
+      cookies.set(pair.slice(0, index).trim(), pair.slice(index + 1).trim())
+    }
+  }
+
+  return encodeCookies(cookies)
+}
+
+const streamBackendRequest = async ({
+  request,
+  backendUrl,
+  method: requestedMethod,
+  includeSetCookie = false,
+}: {
+  request: Request
+  backendUrl: URL
+  method?: string
+  includeSetCookie?: boolean
+}) => {
+  const method = (requestedMethod ?? request.method).toUpperCase()
+  const headers = new Headers({ accept: "application/json" })
+  const contentType = request.headers.get("content-type")
+  const cookie = request.headers.get("cookie")
+  const userAgent = request.headers.get("user-agent")
+  const forwardedFor = request.headers.get("x-forwarded-for")
+
+  if (contentType) headers.set("content-type", contentType)
+  if (cookie) headers.set("cookie", cookie)
+  if (userAgent) headers.set("user-agent", userAgent)
+  if (forwardedFor) headers.set("x-forwarded-for", forwardedFor)
+
+  let body: ArrayBuffer | undefined
+  try {
+    if (method !== "GET" && method !== "HEAD") {
+      body = await request.arrayBuffer()
+    }
+  } catch {
+    return Response.json({ ok: false, message: "Backend unavailable" }, { status: 503 })
+  }
+
+  let backendResponse: Response
+  try {
+    backendResponse = await fetchWithTimeout(backendUrl, {
+      method,
+      cache: "no-store",
+      headers,
+      body,
+    })
+  } catch {
+    return Response.json({ ok: false, message: "Backend unavailable" }, { status: 503 })
+  }
+
+  const response = new Response(backendResponse.body, {
+    status: backendResponse.status,
+    headers: {
+      "content-type": backendResponse.headers.get("content-type") ?? "application/json",
+    },
+  })
+
+  if (includeSetCookie) {
+    for (const value of getSetCookieHeadersShared(backendResponse.headers)) {
+      response.headers.append("set-cookie", value)
+    }
+  }
+
+  return response
+}
 
 const DEFAULT_BACKEND_URL = "http://localhost:3000"
 

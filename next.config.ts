@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import path from "node:path";
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "/user_dashboard";
 const legacyBasePaths = ["/dashboard", "/dahboard"].filter(
   (path) => path !== basePath,
@@ -31,12 +30,6 @@ const nextConfig: NextConfig = {
   basePath,
   reactStrictMode: true,
   poweredByHeader: false,
-  turbopack: {
-    root: path.resolve(__dirname, ".."),
-  },
-  experimental: {
-    externalDir: true,
-  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
