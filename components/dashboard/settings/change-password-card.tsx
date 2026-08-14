@@ -12,6 +12,8 @@ import { RequiredMark } from "@/components/ui/required-mark";
 import { authenticatedFetch } from "@/lib/auth/client";
 import { withBasePath } from "@/lib/routes";
 
+const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
+
 export function ChangePasswordCard() {
   const [form, setForm] = useState({
     currentPassword: "",
@@ -27,6 +29,14 @@ export function ChangePasswordCard() {
     }
     if (form.newPassword.length < 8 || form.newPassword.length > 128) {
       toast.error("New password must be between 8 and 128 characters");
+      return;
+    }
+    if (!PASSWORD_PATTERN.test(form.newPassword)) {
+      toast.error("New password must include uppercase, lowercase, and number characters");
+      return;
+    }
+    if (form.currentPassword === form.newPassword) {
+      toast.error("New password must be different from current password");
       return;
     }
     if (form.newPassword !== form.confirmPassword) {
