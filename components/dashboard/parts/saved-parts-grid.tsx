@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { ExternalLink, Package, Trash2 } from "lucide-react"
+import { toast } from "sonner"
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
@@ -41,7 +42,14 @@ export function SavedPartsGrid({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ partUid }),
       })
-      if (response.ok) onRemove(partUid)
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null
+        throw new Error(payload?.message ?? "Unable to remove saved part")
+      }
+      onRemove(partUid)
+      toast.success("Saved part removed")
+    } catch (caught) {
+      toast.error(caught instanceof Error ? caught.message : "Unable to remove saved part")
     } finally {
       setRemovingPartUid(null)
     }
@@ -65,7 +73,13 @@ export function SavedPartsGrid({
           watchForPriceDrops: input.watchForPriceDrops,
           watchForStockReturns: input.watchForStockReturns,
         })
+        toast.success("Saved-part alerts updated")
+      } else {
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null
+        throw new Error(payload?.message ?? "Unable to update saved-part alerts")
       }
+    } catch (caught) {
+      toast.error(caught instanceof Error ? caught.message : "Unable to update saved-part alerts")
     } finally {
       setUpdatingPartUid(null)
     }

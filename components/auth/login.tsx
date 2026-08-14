@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { FirebaseError } from "firebase/app"
 import { Eye, EyeOff, ShieldCheck } from "lucide-react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RequiredMark } from "@/components/ui/required-mark"
 import {
   createFirebaseLoginPayload,
   isFirebaseAuthConfigured,
@@ -39,16 +41,22 @@ export function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setError("")
+    const normalizedEmail = email.trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      toast.error("Enter a valid email address.")
+      return
+    }
+    if (password.length < 8 || password.length > 128) {
+      toast.error("Password must be between 8 and 128 characters.")
+      return
+    }
     setIsSubmitting(true)
 
     try {
-      const normalizedEmail = email.trim().toLowerCase()
       const body = isFirebaseAuthConfigured()
         ? await createFirebaseLoginPayload(normalizedEmail, password)
         : {
@@ -70,10 +78,11 @@ export function LoginForm() {
         )
       }
 
+      toast.success("Signed in successfully")
       router.replace(appRoutes.overview)
       router.refresh()
     } catch (loginError) {
-      setError(getLoginError(loginError))
+      toast.error(getLoginError(loginError))
     } finally {
       setIsSubmitting(false)
     }
@@ -94,14 +103,15 @@ export function LoginForm() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-5" onSubmit={handleSubmit}>
+            <form noValidate className="space-y-5" onSubmit={handleSubmit}>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email<RequiredMark /></Label>
                 <Input
                   id="email"
                   type="email"
                   autoComplete="email"
                   value={email}
+                  maxLength={254}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="you@example.com"
                   className="h-11 border-border bg-brand-surface"
@@ -109,13 +119,15 @@ export function LoginForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Password<RequiredMark /></Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
                     value={password}
+                    minLength={8}
+                    maxLength={128}
                     onChange={(event) => setPassword(event.target.value)}
                     placeholder="Enter your password"
                     className="h-11 border-border bg-brand-surface pr-11"
@@ -134,11 +146,6 @@ export function LoginForm() {
                   </Button>
                 </div>
               </div>
-              {error ? (
-                <p role="alert" className="text-sm text-destructive">
-                  {error}
-                </p>
-              ) : null}
               <Button
                 type="submit"
                 disabled={isSubmitting}

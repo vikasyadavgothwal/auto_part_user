@@ -2,12 +2,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RequiredMark } from "@/components/ui/required-mark"
 
 type OrganizationSetting = {
   id: string
   label: string
   type?: string
   defaultValue: string
+  minLength?: number
+  maxLength: number
 }
 
 type OrganizationProfileCardProps = {
@@ -25,18 +28,21 @@ export function OrganizationProfileCard({
       <CardContent className="grid gap-6 md:grid-cols-2">
         {settings.map((setting) => (
           <div key={setting.id} className="space-y-2">
-            <Label htmlFor={setting.id}>{setting.label}</Label>
+            <Label htmlFor={setting.id}>{setting.label}<RequiredMark /></Label>
             <Input
               id={setting.id}
               type={setting.type}
               defaultValue={setting.defaultValue}
+              minLength={setting.minLength}
+              maxLength={setting.maxLength}
+              required
               className="border-border bg-brand-surface"
             />
           </div>
         ))}
 
         <div className="md:col-span-2">
-          <Button className="bg-primary text-primary-foreground hover:bg-brand-primary-hover">
+          <Button type="button" className="bg-primary text-primary-foreground hover:bg-brand-primary-hover">
             Save Settings
           </Button>
         </div>

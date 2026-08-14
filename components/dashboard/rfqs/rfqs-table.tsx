@@ -2,10 +2,12 @@
 
 import Link from "next/link"
 import { Fragment, useEffect, useState } from "react"
+import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { RequiredMark } from "@/components/ui/required-mark"
 import {
   Dialog,
   DialogContent,
@@ -149,7 +151,6 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
   const [addresses, setAddresses] = useState<UserAddressRecord[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState("")
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false)
-  const [error, setError] = useState("")
   const selected = rfqs.find((rfq) => rfq.id === selectedId) ?? null
   const confirmBid = selected?.bids.find((bid) => bid.id === confirmBidId) ?? null
   const selectedAddress = addresses.find((address) => address.id === selectedAddressId) ?? null
@@ -161,7 +162,6 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
     setAddresses([])
     setSelectedAddressId("")
     setIsLoadingAddresses(!rfq.order && rfq.status === "open")
-    setError("")
   }
 
   useEffect(() => {
@@ -193,7 +193,7 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
       })
       .catch((caught) => {
         if (mounted) {
-          setError(
+          toast.error(
             caught instanceof Error
               ? caught.message
               : "Unable to load delivery addresses",
@@ -212,11 +212,10 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
   async function acceptBid(bidId: string) {
     if (!selected) return
     if (!selectedAddressId) {
-      setError("Select a delivery address before creating an order")
+      toast.error("Select a delivery address before creating an order")
       return
     }
     setAccepting(bidId)
-    setError("")
     try {
       const response = await authenticatedFetch(
         withBasePath(`/api/rfqs/${selected.id}/bids/${bidId}/accept`),
@@ -235,12 +234,11 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
         throw new Error(payload.message || "Unable to accept quote")
       }
       onAccepted(selected.id, bidId, payload.order)
-      window.alert("Payment Successful")
-      window.alert("Your order has been created successfully.")
+      toast.success("Payment successful. Your order has been created.")
       setConfirmBidId(null)
       setSelectedAddressId("")
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to accept quote")
+      toast.error(caught instanceof Error ? caught.message : "Unable to accept quote")
     } finally {
       setAccepting(null)
     }
@@ -250,7 +248,7 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
     <div className="space-y-2 rounded-sm border border-border bg-brand-surface p-4 text-sm">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <label htmlFor={inputId} className="font-medium text-foreground">
-          Delivery address
+          Delivery address<RequiredMark />
         </label>
         <Link
           href={withBasePath(appRoutes.settings)}
@@ -266,6 +264,7 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
           <select
             id={inputId}
             value={selectedAddressId}
+            required
             onChange={(event) => setSelectedAddressId(event.target.value)}
             className="h-11 w-full rounded-sm border border-border bg-background px-3 text-foreground outline-none focus-visible:border-primary"
           >
@@ -393,7 +392,6 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
             setAddresses([])
             setSelectedAddressId("")
             setIsLoadingAddresses(false)
-            setError("")
           }
         }}
       >
@@ -435,7 +433,7 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
                 <div className="overflow-x-auto rounded-sm border border-border">
                   <table className="w-full min-w-[760px] text-sm">
                     <thead className="bg-brand-surface text-brand-muted">
-                      <tr><th rowSpan={2} className="p-3 text-left">VIN</th><th rowSpan={2} className="p-3 text-left">Part</th><th rowSpan={2} className="p-3 text-left">Number</th><th rowSpan={2} className="p-3 text-left">Qty</th><th rowSpan={2} className="p-3 text-left">Target</th>{selected.bids.map((bid, index) => <th key={bid.id} colSpan={4} className="border-l border-border p-3 text-left"><div className="flex min-w-[410px] items-center justify-between gap-3"><div><p className="font-semibold text-foreground">Vendor {index + 1}</p><p className="text-xs font-normal">{supplierName(bid)} · {money(bid.totalAmount)} · up to {bid.deliveryDays} days</p></div>{selected.status === "open" && bid.status === "submitted" ? <Button size="sm" disabled={Boolean(accepting)} onClick={() => { setError(""); setConfirmBidId(bid.id) }}>Accept Quote</Button> : <span className="text-xs capitalize">{bid.status}</span>}</div></th>)}</tr>
+                      <tr><th rowSpan={2} className="p-3 text-left">VIN</th><th rowSpan={2} className="p-3 text-left">Part</th><th rowSpan={2} className="p-3 text-left">Number</th><th rowSpan={2} className="p-3 text-left">Qty</th><th rowSpan={2} className="p-3 text-left">Target</th>{selected.bids.map((bid, index) => <th key={bid.id} colSpan={4} className="border-l border-border p-3 text-left"><div className="flex min-w-[410px] items-center justify-between gap-3"><div><p className="font-semibold text-foreground">Vendor {index + 1}</p><p className="text-xs font-normal">{supplierName(bid)} · {money(bid.totalAmount)} · up to {bid.deliveryDays} days</p></div>{selected.status === "open" && bid.status === "submitted" ? <Button size="sm" disabled={Boolean(accepting)} onClick={() => setConfirmBidId(bid.id)}>Accept Quote</Button> : <span className="text-xs capitalize">{bid.status}</span>}</div></th>)}</tr>
                       <tr>{selected.bids.map((bid) => <Fragment key={bid.id}><th className="border-l border-t border-border p-2 text-left">Condition</th><th className="border-t border-border p-2 text-left">Delivery</th><th className="border-t border-border p-2 text-right">Unit Price</th><th className="border-t border-border p-2 text-right">Line Total</th></Fragment>)}</tr>
                     </thead>
                     <tbody>{selected.parts.map((part) => <tr key={part.id} className="border-t border-border"><td className="p-3 font-mono text-xs">{part.vehicleVin || selected.vehicleVin || "-"}</td><td className="p-3 font-medium">{part.partName}</td><td className="p-3">{part.partNumber || "-"}</td><td className="p-3">{part.quantity}</td><td className="p-3">{part.targetPrice === null ? "-" : money(part.targetPrice)}</td>{selected.bids.map((bid) => { const item = bid.items.find((entry) => entry.rfqPartId === part.id); return <Fragment key={bid.id}><td className="border-l border-border p-3">{item?.partType || "Pending"}</td><td className="p-3">{item ? deliveryOptionLabel(item.deliveryOption) : "-"}</td><td className="p-3 text-right">{item ? money(item.unitPrice) : "-"}</td><td className="p-3 text-right font-medium">{item ? money(item.lineTotal) : "-"}</td></Fragment> })}</tr>)}</tbody>
@@ -448,7 +446,6 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
                 ? renderAddressSelector("user-rfq-order-address")
                 : null}
 
-              {error ? <p className="text-sm text-destructive">{error}</p> : null}
             </div>
           ) : null}
         </DialogContent>
@@ -488,7 +485,6 @@ export function RfqsTable({ rfqs, onAccepted }: RfqsTableProps) {
               {renderAddressSelector("user-confirm-order-address")}
             </div>
           ) : null}
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <DialogFooter className="sticky bottom-0 -mx-6 -mb-6 border-t border-border bg-background/95 px-6 py-4 backdrop-blur">
             <Button
               variant="outline"

@@ -6,6 +6,7 @@ import type { ReactNode } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RequiredMark } from "@/components/ui/required-mark"
 import { getVehicleDisplayName, type VehicleRecord } from "@/lib/vehicles"
 
 type VehicleDetails = {
@@ -99,10 +100,11 @@ export function RfqAddressSection({
             </select>
           </label> : null}
           <label className="space-y-2">
-            <Label>Project Name *</Label>
+            <Label>Project Name<RequiredMark /></Label>
             <Input
               value={projectName}
               maxLength={120}
+              required
               aria-invalid={Boolean(fieldErrors.projectName)}
               onChange={(event) => {
                 clearError("projectName")
@@ -113,12 +115,13 @@ export function RfqAddressSection({
             {fieldError("projectName")}
           </label>
           <label className="space-y-2">
-            <Label>Response Deadline *</Label>
+            <Label>Response Deadline<RequiredMark /></Label>
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-muted" />
               <Input
                 type="date"
                 value={deadline}
+                required
                 aria-invalid={Boolean(fieldErrors.deadline)}
                 onChange={(event) => {
                   clearError("deadline")
@@ -130,11 +133,12 @@ export function RfqAddressSection({
             {fieldError("deadline")}
           </label>
           {importedVehicleCount <= 1 ? <><label className="space-y-2">
-            <Label>Vehicle Year *</Label>
+            <Label>Vehicle Year<RequiredMark /></Label>
             <Input
               inputMode="numeric"
               value={vehicle.year}
               maxLength={4}
+              required
               aria-invalid={Boolean(fieldErrors["vehicle.year"])}
               onChange={(event) =>
                 updateVehicle("year", digitsOnly(event.target.value).slice(0, 4))
@@ -144,10 +148,11 @@ export function RfqAddressSection({
             {fieldError("vehicle.year")}
           </label>
           <label className="space-y-2">
-            <Label>Make *</Label>
+            <Label>Make<RequiredMark /></Label>
             <Input
               value={vehicle.make}
               maxLength={80}
+              required
               aria-invalid={Boolean(fieldErrors["vehicle.make"])}
               onChange={(event) => updateVehicle("make", event.target.value)}
               className="h-10 border-border bg-brand-surface"
@@ -155,10 +160,11 @@ export function RfqAddressSection({
             {fieldError("vehicle.make")}
           </label>
           <label className="space-y-2">
-            <Label>Model *</Label>
+            <Label>Model<RequiredMark /></Label>
             <Input
               value={vehicle.model}
               maxLength={80}
+              required
               aria-invalid={Boolean(fieldErrors["vehicle.model"])}
               onChange={(event) => updateVehicle("model", event.target.value)}
               className="h-10 border-border bg-brand-surface"
@@ -193,10 +199,11 @@ export function RfqAddressSection({
             {fieldError("vehicle.vin")}
           </label></> : null}
           <label className="space-y-2">
-            <Label>Customer / Company *</Label>
+            <Label>Customer / Company<RequiredMark /></Label>
             <Input
               value={companyName}
               maxLength={120}
+              required
               aria-invalid={Boolean(fieldErrors.companyName)}
               onChange={(event) => {
                 clearError("companyName")
@@ -207,10 +214,11 @@ export function RfqAddressSection({
             {fieldError("companyName")}
           </label>
           <label className="space-y-2">
-            <Label>Contact Name *</Label>
+            <Label>Contact Name<RequiredMark /></Label>
             <Input
               value={contactName}
               maxLength={120}
+              required
               aria-invalid={Boolean(fieldErrors.contactName)}
               onChange={(event) => {
                 clearError("contactName")
@@ -221,11 +229,12 @@ export function RfqAddressSection({
             {fieldError("contactName")}
           </label>
           <label className="space-y-2">
-            <Label>Email *</Label>
+            <Label>Email<RequiredMark /></Label>
             <Input
               type="email"
               value={email}
-              maxLength={180}
+              maxLength={254}
+              required
               aria-invalid={Boolean(fieldErrors.email)}
               onChange={(event) => {
                 clearError("email")
@@ -236,10 +245,12 @@ export function RfqAddressSection({
             {fieldError("email")}
           </label>
           <label className="space-y-2">
-            <Label>Phone *</Label>
+            <Label>Phone<RequiredMark /></Label>
             <Input
               value={phone}
               maxLength={20}
+              type="tel"
+              required
               aria-invalid={Boolean(fieldErrors.phone)}
               onChange={(event) => {
                 clearError("phone")

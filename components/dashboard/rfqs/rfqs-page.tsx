@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { CheckCircle2, Plus, Search } from "lucide-react"
+import { Plus, Search } from "lucide-react"
+import { toast } from "sonner"
 
 import { RfqStats } from "@/components/dashboard/rfqs/rfq-stats"
 import { RfqStepsCard } from "@/components/dashboard/rfqs/rfq-steps-card"
@@ -54,16 +55,22 @@ export function RfqsPage({
   const [pagination, setPagination] = useState(initialPagination)
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+
+  useEffect(() => {
+    if (createdRfqId) {
+      toast.success(
+        `${createdRfqId === "1" ? "RFQ" : createdRfqId} created successfully`,
+      )
+    }
+  }, [createdRfqId])
 
   async function load(page: number, query = search) {
     setLoading(true)
-    setError("")
     try {
       const params = new URLSearchParams({
         page: String(page),
         pageSize: "10",
-        search: query.trim(),
+        search: query.trim().slice(0, 100),
       })
       const response = await authenticatedFetch(withBasePath(`/api/rfqs?${params}`))
       const payload = await readApiResponse<{
@@ -78,7 +85,7 @@ export function RfqsPage({
       setRfqs(payload.rfqs)
       setPagination(payload.pagination)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to load RFQs")
+      toast.error(caught instanceof Error ? caught.message : "Unable to load RFQs")
     } finally {
       setLoading(false)
     }
@@ -105,19 +112,6 @@ export function RfqsPage({
         </Button>
       </div>
 
-      {createdRfqId ? (
-        <div
-          role="status"
-          className="flex items-center gap-3 rounded-sm border border-brand-success/30 bg-brand-success/10 p-4 text-sm text-brand-success"
-        >
-          <CheckCircle2 className="h-5 w-5" />
-          <span>
-            <strong>{createdRfqId === "1" ? "RFQ" : createdRfqId}</strong>{" "}
-            created successfully. It is now available for supplier quotes.
-          </span>
-        </div>
-      ) : null}
-
       <RfqStats stats={buildRfqStats(rfqs)} />
 
       <form
@@ -131,6 +125,7 @@ export function RfqsPage({
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-muted" />
           <Input
             value={search}
+            maxLength={100}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search RFQ ID, project, vehicle, VIN, or part..."
             className="h-10 border-border bg-brand-panel pl-9 text-foreground"
@@ -153,12 +148,6 @@ export function RfqsPage({
           </Button>
         ) : null}
       </form>
-
-      {error ? (
-        <p className="rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </p>
-      ) : null}
 
       <RfqsTable
         rfqs={rfqs}

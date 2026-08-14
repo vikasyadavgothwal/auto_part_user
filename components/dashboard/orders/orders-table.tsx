@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/table";
 import { authenticatedFetch } from "@/lib/auth/client";
 import { withBasePath } from "@/lib/routes";
+import { RequiredMark } from "@/components/ui/required-mark";
 
 export type Order = {
   id: string;
@@ -166,20 +167,26 @@ export function OrdersTable({ orders }: OrdersTableProps) {
   const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function openReview(item: Order["items"][number]) {
     setReviewItem(item);
     setRating(item.review?.rating ?? 5);
     setComment(item.review?.comment ?? "");
-    setError(null);
   }
 
   function submitReview() {
     if (!reviewItem) return;
+    const normalizedComment = comment.trim();
+    if (rating < 1 || rating > 5) {
+      toast.error("Select a rating between 1 and 5 stars");
+      return;
+    }
+    if (normalizedComment.length < 3 || !/[\p{L}\p{N}]/u.test(normalizedComment)) {
+      toast.error("Review must be at least 3 characters");
+      return;
+    }
     const isEditing = Boolean(reviewItem.review);
-    setError(null);
 
     startTransition(async () => {
       try {
@@ -191,7 +198,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
             body: JSON.stringify({
               orderItemId: reviewItem.id,
               rating,
-              comment,
+              comment: normalizedComment,
             }),
           },
         );
@@ -200,15 +207,14 @@ export function OrdersTable({ orders }: OrdersTableProps) {
           const payload = (await response.json().catch(() => null)) as
             | { message?: string }
             | null;
-          setError(payload?.message ?? "Unable to save review");
-          return;
+          throw new Error(payload?.message ?? "Unable to save review");
         }
 
         toast.success(isEditing ? "Review updated successfully" : "Review saved successfully");
         setReviewItem(null);
         router.refresh();
-      } catch {
-        setError("Unable to reach the server. Please try again.");
+      } catch (caught) {
+        toast.error(caught instanceof Error ? caught.message : "Unable to reach the server. Please try again.");
       }
     });
   }
@@ -235,7 +241,6 @@ export function OrdersTable({ orders }: OrdersTableProps) {
     setUnavailableTimes([]);
     setIsLoadingVehicles(true);
     setIsLoadingAvailability(Boolean(booking.serviceId));
-    setError(null);
   }
 
   useEffect(() => {
@@ -263,7 +268,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
       .catch((caught) => {
         if (!mounted) return;
         setVehicles([]);
-        setError(caught instanceof Error ? caught.message : "Unable to load vehicles");
+        toast.error(caught instanceof Error ? caught.message : "Unable to load vehicles");
       })
       .finally(() => {
         if (mounted) setIsLoadingVehicles(false);
@@ -298,7 +303,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
       .catch((caught) => {
         if (!mounted) return;
         setUnavailableTimes([]);
-        setError(caught instanceof Error ? caught.message : "Unable to load slots");
+        toast.error(caught instanceof Error ? caught.message : "Unable to load slots");
       })
       .finally(() => {
         if (mounted) setIsLoadingAvailability(false);
@@ -313,11 +318,10 @@ export function OrdersTable({ orders }: OrdersTableProps) {
       (vehicle) => vehicle.id === selectedVehicleId,
     );
     if (!slotBooking || !slotDate || !slotTime || !selectedVehicle) {
-      setError("Select car, date, and available time for the service slot.");
+      toast.error("Select car, date, and available time for the service slot.");
       return;
     }
 
-    setError(null);
     startTransition(async () => {
       try {
         const response = await authenticatedFetch(
@@ -340,15 +344,14 @@ export function OrdersTable({ orders }: OrdersTableProps) {
           const payload = (await response.json().catch(() => null)) as
             | { message?: string }
             | null;
-          setError(payload?.message ?? "Unable to schedule service slot");
-          return;
+          throw new Error(payload?.message ?? "Unable to schedule service slot");
         }
 
         toast.success("Service slot selected");
         setSlotBooking(null);
         router.refresh();
-      } catch {
-        setError("Unable to reach the server. Please try again.");
+      } catch (caught) {
+        toast.error(caught instanceof Error ? caught.message : "Unable to reach the server. Please try again.");
       }
     });
   }
@@ -658,7 +661,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
 
             <div>
               <div className="mb-2 text-sm font-medium text-foreground">
-                Rating
+                Rating<RequiredMark />
               </div>
               <div className="flex gap-1">
                 {Array.from({ length: 5 }).map((_, index) => {
@@ -685,19 +688,18 @@ export function OrdersTable({ orders }: OrdersTableProps) {
             </div>
 
             <label className="grid gap-2 text-sm font-medium text-foreground">
-              Review
+              Review<RequiredMark />
               <textarea
                 value={comment}
                 onChange={(event) => setComment(event.target.value)}
                 className="min-h-28 rounded-sm border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 maxLength={1000}
+                minLength={3}
+                required
                 placeholder="Share your experience with this supplier and product"
               />
             </label>
 
-            {error ? (
-              <p className="text-sm font-medium text-destructive">{error}</p>
-            ) : null}
           </div>
 
           <DialogFooter>
@@ -734,7 +736,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
           </DialogHeader>
           <div className="grid gap-5">
             <div className="grid gap-2">
-              <p className="text-sm font-medium text-foreground">Car</p>
+              <p className="text-sm font-medium text-foreground">Car<RequiredMark /></p>
               {isLoadingVehicles ? (
                 <p className="rounded-sm border border-border bg-background px-3 py-2 text-sm text-brand-muted">
                   Loading cars...
@@ -769,7 +771,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
             </div>
 
             <div className="grid gap-2">
-              <p className="text-sm font-medium text-foreground">Available date</p>
+              <p className="text-sm font-medium text-foreground">Available date<RequiredMark /></p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {dateOptions.map((date) => (
                   <button
@@ -794,7 +796,7 @@ export function OrdersTable({ orders }: OrdersTableProps) {
             </div>
 
             <div className="grid gap-2">
-              <p className="text-sm font-medium text-foreground">Available slots</p>
+              <p className="text-sm font-medium text-foreground">Available slots<RequiredMark /></p>
               {isLoadingAvailability ? (
                 <p className="rounded-sm border border-border bg-background px-3 py-2 text-sm text-brand-muted">
                   Loading slots...
@@ -820,11 +822,6 @@ export function OrdersTable({ orders }: OrdersTableProps) {
                 </div>
               )}
             </div>
-            {error ? (
-              <p className="rounded-sm border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {error}
-              </p>
-            ) : null}
           </div>
           <DialogFooter>
             <Button

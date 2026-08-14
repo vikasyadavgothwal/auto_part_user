@@ -15,7 +15,6 @@ import {
   EditAddressDialog,
   ProfileInformationSection,
   SavedDeliveryAddressesSection,
-  SettingsAlerts,
   SettingsHeader,
 } from "@/components/dashboard/settings/user-settings-sections";
 import { authenticatedFetch } from "@/lib/auth/client";
@@ -57,7 +56,7 @@ type UserSettingsManagerProps = {
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MOBILE_PATTERN = /^\+\d{8,18}$/;
+const MOBILE_PATTERN = /^\+\d{8,15}$/;
 const POSTAL_CODE_PATTERN = /^[A-Za-z0-9 -]*$/;
 const MOBILE_COUNTRY_CODES = [
   { code: "+971", label: "UAE" },
@@ -93,7 +92,8 @@ const parseMobileNumber = (value: string) => {
 };
 
 const buildMobileNumber = (countryCode: string, localNumber: string) => {
-  const digits = normalizeDigits(localNumber);
+  const maxLocalDigits = 15 - countryCode.replace(/\D/g, "").length;
+  const digits = normalizeDigits(localNumber, maxLocalDigits);
   return digits ? `${countryCode}${digits}` : "";
 };
 
@@ -174,8 +174,6 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
   const [mobileLocalNumber, setMobileLocalNumber] = useState(
     initialMobile.localNumber,
   );
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
   const [addresses, setAddresses] = useState<UserAddressRecord[]>([]);
   const [addressForm, setAddressForm] =
     useState<UserAddressFormValues>(emptyAddressForm);
@@ -185,8 +183,6 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
     useState<UserAddressRecord | null>(null);
   const [editAddressForm, setEditAddressForm] =
     useState<UserAddressFormValues>(emptyAddressForm);
-  const [addressError, setAddressError] = useState("");
-  const [editAddressError, setEditAddressError] = useState("");
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
   const [isSavingAddress, setIsSavingAddress] = useState(false);
   const [isUpdatingAddress, setIsUpdatingAddress] = useState(false);
@@ -214,10 +210,8 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
       })
       .catch((loadError) => {
         if (mounted) {
-          setAddressError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Unable to load addresses",
+          toast.error(
+            loadError instanceof Error ? loadError.message : "Unable to load addresses",
           );
         }
       })
@@ -244,7 +238,6 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
     value: UserAddressFormValues[Key],
   ) => {
     setAddressForm((current) => ({ ...current, [key]: value }));
-    setAddressError("");
   };
 
   const setEditAddressField = <Key extends keyof UserAddressFormValues>(
@@ -252,21 +245,17 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
     value: UserAddressFormValues[Key],
   ) => {
     setEditAddressForm((current) => ({ ...current, [key]: value }));
-    setEditAddressError("");
   };
 
   const openEditAddress = (address: UserAddressRecord) => {
     setEditingAddress(address);
     setEditAddressForm(formFromAddress(address));
-    setEditAddressError("");
-    setAddressError("");
   };
 
   const closeEditAddress = () => {
     if (isUpdatingAddress) return;
     setEditingAddress(null);
     setEditAddressForm(emptyAddressForm);
-    setEditAddressError("");
   };
 
   const closeDeleteAddressDialog = () => {
@@ -311,6 +300,20 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
 
   const validateForm = () => {
     if (!form.firstName.trim()) return "First name is required";
+    if (form.firstName.trim().length < 2) return "First name must be at least 2 characters";
+    if (!/[\p{L}\p{N}]/u.test(form.firstName)) return "First name must include a letter or number";
+    if (form.lastName.trim() && form.lastName.trim().length < 2) {
+      return "Last name must be at least 2 characters";
+    }
+    if (form.lastName.trim() && !/[\p{L}\p{N}]/u.test(form.lastName)) {
+      return "Last name must include a letter or number";
+    }
+    if (form.companyName.trim() && form.companyName.trim().length < 2) {
+      return "Company name must be at least 2 characters";
+    }
+    if (form.companyName.trim() && !/[\p{L}\p{N}]/u.test(form.companyName)) {
+      return "Company name must include a letter or number";
+    }
     if (form.companyName.trim().length > 160) {
       return "Company name must be 160 characters or fewer";
     }
@@ -320,7 +323,7 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
     ) {
       return "Name fields must be 100 characters or fewer";
     }
-    if (form.email && !EMAIL_PATTERN.test(form.email)) {
+    if (form.email.length > 254 || (form.email && !EMAIL_PATTERN.test(form.email))) {
       return "Enter a valid email address";
     }
     if (form.phone && !MOBILE_PATTERN.test(form.phone)) {
@@ -334,26 +337,40 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
 
   const validateAddressForm = (values: UserAddressFormValues) => {
     if (!values.label.trim()) return "Address label is required";
+    if (values.label.trim().length > 60) return "Address label must be 60 characters or fewer";
+    if (!/[\p{L}\p{N}]/u.test(values.label)) return "Address label must include a letter or number";
     if (!values.recipientName.trim()) return "Recipient name is required";
+    if (!/[\p{L}\p{N}]/u.test(values.recipientName)) return "Recipient name must include a letter or number";
+    if (values.recipientName.trim().length > 120) return "Recipient name must be 120 characters or fewer";
     if (!values.phone.trim()) return "Phone number is required";
-    if (!/^\+?[0-9][0-9\s()-]{6,24}$/.test(values.phone.trim())) {
+    const phoneDigits = values.phone.replace(/\D/g, "");
+    if (!/^\+?[0-9\s()-]+$/.test(values.phone.trim()) || phoneDigits.length < 7 || phoneDigits.length > 15) {
       return "Enter a valid phone number";
     }
     if (!values.addressLine1.trim()) return "Address line 1 is required";
+    if (!/[\p{L}\p{N}]/u.test(values.addressLine1)) return "Address line 1 must include a letter or number";
+    if (values.addressLine1.trim().length > 255) return "Address line 1 must be 255 characters or fewer";
+    if (values.addressLine2.trim().length > 255) return "Address line 2 must be 255 characters or fewer";
+    if (values.landmark.trim().length > 160) return "Landmark must be 160 characters or fewer";
     if (!values.city.trim()) return "City is required";
+    if (!/[\p{L}\p{N}]/u.test(values.city)) return "City must include a letter or number";
+    if (values.city.trim().length > 120) return "City must be 120 characters or fewer";
     if (!values.state.trim()) return "State is required";
+    if (!/[\p{L}\p{N}]/u.test(values.state)) return "State must include a letter or number";
+    if (values.state.trim().length > 120) return "State must be 120 characters or fewer";
     if (!/^[A-Za-z0-9 -]{3,20}$/.test(values.postalCode.trim())) {
       return "Enter a valid postal code";
     }
     if (!values.country.trim()) return "Country is required";
+    if (!/[\p{L}\p{N}]/u.test(values.country)) return "Country must include a letter or number";
+    if (values.country.trim().length > 120) return "Country must be 120 characters or fewer";
     return "";
   };
 
   const saveAddress = async () => {
-    setAddressError("");
     const validationError = validateAddressForm(addressForm);
     if (validationError) {
-      setAddressError(validationError);
+      toast.error(validationError);
       return;
     }
 
@@ -377,9 +394,7 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
       setAddressForm(emptyAddressForm);
       toast.success("Delivery address saved");
     } catch (saveError) {
-      setAddressError(
-        saveError instanceof Error ? saveError.message : "Unable to save address",
-      );
+      toast.error(saveError instanceof Error ? saveError.message : "Unable to save address");
     } finally {
       setIsSavingAddress(false);
     }
@@ -387,10 +402,9 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
 
   const updateAddress = async () => {
     if (!editingAddress) return;
-    setEditAddressError("");
     const validationError = validateAddressForm(editAddressForm);
     if (validationError) {
-      setEditAddressError(validationError);
+      toast.error(validationError);
       return;
     }
 
@@ -421,11 +435,7 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
       setEditAddressForm(emptyAddressForm);
       toast.success("Delivery address updated");
     } catch (updateError) {
-      setEditAddressError(
-        updateError instanceof Error
-          ? updateError.message
-          : "Unable to update address",
-      );
+      toast.error(updateError instanceof Error ? updateError.message : "Unable to update address");
     } finally {
       setIsUpdatingAddress(false);
     }
@@ -433,7 +443,6 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
 
   const setDefaultAddress = async (address: UserAddressRecord) => {
     if (address.isDefault) return;
-    setAddressError("");
     setDefaultingAddressId(address.id);
     try {
       const response = await authenticatedFetch(
@@ -471,18 +480,13 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
       );
       toast.success("Default delivery address updated");
     } catch (updateError) {
-      setAddressError(
-        updateError instanceof Error
-          ? updateError.message
-          : "Unable to update address",
-      );
+      toast.error(updateError instanceof Error ? updateError.message : "Unable to update address");
     } finally {
       setDefaultingAddressId("");
     }
   };
 
   const deleteAddress = async (addressId: string) => {
-    setAddressError("");
     setDeletingAddressId(addressId);
     try {
       const response = await authenticatedFetch(
@@ -497,11 +501,7 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
       setAddressPendingDelete(null);
       toast.success("Delivery address deleted");
     } catch (deleteError) {
-      setAddressError(
-        deleteError instanceof Error
-          ? deleteError.message
-          : "Unable to delete address",
-      );
+      toast.error(deleteError instanceof Error ? deleteError.message : "Unable to delete address");
     } finally {
       setDeletingAddressId("");
     }
@@ -524,11 +524,9 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
 
   const saveSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError("");
-    setMessage("");
     const validationError = validateForm();
     if (validationError) {
-      setError(validationError);
+      toast.error(validationError);
       return;
     }
 
@@ -555,32 +553,26 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
           setMobileLocalNumber(pendingMobileLocalNumber);
         }
       }
-      setMessage(
+      toast.success(
         emailChanged || phoneChanged
           ? "Profile saved. Verify changed email or mobile before it becomes active on your account."
           : "Settings saved",
       );
     } catch (saveError) {
-      setError(
-        saveError instanceof Error
-          ? saveError.message
-          : "Unable to save settings",
-      );
+      toast.error(saveError instanceof Error ? saveError.message : "Unable to save settings");
     } finally {
       setIsSaving(false);
     }
   };
 
   const sendEmailVerification = async () => {
-    setError("");
-    setMessage("");
     const email = form.email.trim().toLowerCase();
     if (!email) {
-      setError("Enter an email before verification");
+      toast.error("Enter an email before verification");
       return;
     }
-    if (!EMAIL_PATTERN.test(email)) {
-      setError("Enter a valid email address");
+    if (email.length > 254 || !EMAIL_PATTERN.test(email)) {
+      toast.error("Enter a valid email address");
       return;
     }
 
@@ -598,37 +590,31 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
       if (!response.ok || !payload.ok) {
         throw new Error(payload.message || "Unable to send verification link");
       }
-      setMessage(
+      toast.success(
         payload.verificationLink
           ? `${payload.message} ${payload.verificationLink}`
           : payload.message || "Verification link sent",
       );
     } catch (sendError) {
-      setError(
-        sendError instanceof Error
-          ? sendError.message
-          : "Unable to send verification link",
-      );
+      toast.error(sendError instanceof Error ? sendError.message : "Unable to send verification link");
     } finally {
       setIsSendingEmail(false);
     }
   };
 
   const sendMobileOtp = async () => {
-    setError("");
-    setMessage("");
     const validationError = validateForm();
     if (validationError) {
-      setError(validationError);
+      toast.error(validationError);
       return;
     }
     const normalizedPhone = normalizeMobileValue(form.phone);
     if (!normalizedPhone) {
-      setError("Enter a mobile number before verification");
+      toast.error("Enter a mobile number before verification");
       return;
     }
     if (!isFirebaseAuthConfigured()) {
-      setError("Firebase phone authentication is not configured");
+      toast.error("Firebase phone authentication is not configured");
       return;
     }
 
@@ -664,18 +650,20 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
       }
       setMobileVerificationId(verificationId);
       setOtp("");
-      setMessage("OTP sent by Firebase");
+      toast.success("OTP sent by Firebase");
     } catch (sendError) {
       logFirebasePhoneError(sendError);
-      setError(getFirebasePhoneErrorMessage(sendError));
+      toast.error(getFirebasePhoneErrorMessage(sendError));
     } finally {
       setIsSendingOtp(false);
     }
   };
 
   const verifyMobileOtp = async () => {
-    setError("");
-    setMessage("");
+    if (!/^\d{6}$/.test(otp)) {
+      toast.error("Enter the 6-digit OTP");
+      return;
+    }
     setIsVerifyingOtp(true);
 
     try {
@@ -710,9 +698,9 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
       syncProfileForm(payload.profile);
       setOtp("");
       setMobileVerificationId("");
-      setMessage("Mobile number verified");
+      toast.success("Mobile number verified");
     } catch (verifyError) {
-      setError(getFirebasePhoneErrorMessage(verifyError));
+      toast.error(getFirebasePhoneErrorMessage(verifyError));
     } finally {
       setIsVerifyingOtp(false);
     }
@@ -735,7 +723,6 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
     <div className="space-y-8">
       <SettingsHeader />
       <div id="user-mobile-recaptcha" />
-      <SettingsAlerts message={message} error={error} />
 
       <ContactVerificationSection
         form={form}
@@ -767,7 +754,6 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
       />
 
       <SavedDeliveryAddressesSection
-        addressError={addressError}
         isLoadingAddresses={isLoadingAddresses}
         addresses={addresses}
         addressForm={addressForm}
@@ -778,14 +764,12 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
         openEditAddress={openEditAddress}
         setDefaultAddress={setDefaultAddress}
         setAddressPendingDelete={setAddressPendingDelete}
-        setAddressError={setAddressError}
         saveAddress={saveAddress}
       />
 
       <EditAddressDialog
         editingAddress={editingAddress}
         editAddressForm={editAddressForm}
-        editAddressError={editAddressError}
         isUpdatingAddress={isUpdatingAddress}
         setEditAddressField={setEditAddressField}
         closeEditAddress={closeEditAddress}

@@ -2,23 +2,15 @@
 
 import { useState } from "react";
 import { KeyRound } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import { authenticatedFetch } from "@/lib/auth/client";
 import { withBasePath } from "@/lib/routes";
-
-type Feedback = { title: string; message: string };
 
 export function ChangePasswordCard() {
   const [form, setForm] = useState({
@@ -26,20 +18,19 @@ export function ChangePasswordCard() {
     newPassword: "",
     confirmPassword: "",
   });
-  const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const submit = async () => {
     if (!form.currentPassword) {
-      setFeedback({ title: "Validation Error", message: "Current password is required" });
+      toast.error("Current password is required");
       return;
     }
     if (form.newPassword.length < 8 || form.newPassword.length > 128) {
-      setFeedback({ title: "Validation Error", message: "New password must be between 8 and 128 characters" });
+      toast.error("New password must be between 8 and 128 characters");
       return;
     }
     if (form.newPassword !== form.confirmPassword) {
-      setFeedback({ title: "Validation Error", message: "New passwords do not match" });
+      toast.error("New passwords do not match");
       return;
     }
 
@@ -58,12 +49,9 @@ export function ChangePasswordCard() {
         throw new Error(payload.message || "Unable to change password");
       }
       setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      setFeedback({ title: "Password Changed", message: payload.message || "Password changed successfully" });
+      toast.success(payload.message || "Password changed successfully");
     } catch (error) {
-      setFeedback({
-        title: "Unable To Change Password",
-        message: error instanceof Error ? error.message : "Unable to change password",
-      });
+      toast.error(error instanceof Error ? error.message : "Unable to change password");
     } finally {
       setIsSaving(false);
     }
@@ -71,15 +59,6 @@ export function ChangePasswordCard() {
 
   return (
     <Card className="rounded-sm border border-border bg-brand-panel shadow-none">
-      <Dialog open={Boolean(feedback)} onOpenChange={(open) => !open && setFeedback(null)}>
-        <DialogContent className="border-border bg-brand-panel text-foreground">
-          <DialogHeader>
-            <DialogTitle>{feedback?.title}</DialogTitle>
-            <DialogDescription>{feedback?.message}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter><Button type="button" onClick={() => setFeedback(null)}>OK</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
       <CardHeader><CardTitle>Change Password</CardTitle></CardHeader>
       <CardContent className="grid gap-6 md:grid-cols-3">
         {([
@@ -88,7 +67,7 @@ export function ChangePasswordCard() {
           ["confirmPassword", "Confirm Password", "new-password"],
         ] as const).map(([key, label, autocomplete]) => (
           <div key={key} className="space-y-2">
-            <Label htmlFor={`user-${key}`}>{label}</Label>
+            <Label htmlFor={`user-${key}`}>{label}<RequiredMark /></Label>
             <Input
               id={`user-${key}`}
               type="password"
@@ -96,12 +75,13 @@ export function ChangePasswordCard() {
               value={form[key]}
               onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}
               maxLength={128}
+              required
               className="border-border bg-brand-surface"
             />
           </div>
         ))}
         <div className="md:col-span-3">
-          <Button type="button" variant="outline" disabled={isSaving} onClick={submit} className="gap-2">
+          <Button type="button" variant="outline" disabled={isSaving} onClick={submit} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
             <KeyRound className="size-4" />
             {isSaving ? "Changing..." : "Change Password"}
           </Button>

@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/table"
 import { authenticatedFetch } from "@/lib/auth/client"
 import { withBasePath } from "@/lib/routes"
+import { RequiredMark } from "@/components/ui/required-mark"
 
 export type Booking = {
   id: string
@@ -75,7 +76,6 @@ export function BookingsTable({ bookings }: BookingsTableProps) {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [rating, setRating] = useState(5)
   const [comment, setComment] = useState("")
-  const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [page, setPage] = useState(1)
   const totalPages = Math.max(1, Math.ceil(bookings.length / bookingsPageSize))
@@ -97,13 +97,20 @@ export function BookingsTable({ bookings }: BookingsTableProps) {
     setSelectedBooking(booking)
     setRating(booking.reviewRating ?? 5)
     setComment(booking.reviewComment ?? "")
-    setError(null)
   }
 
   function submitReview() {
     if (!selectedBooking?.serviceId) return
+    const normalizedComment = comment.trim()
+    if (rating < 1 || rating > 5) {
+      toast.error("Select a rating between 1 and 5 stars")
+      return
+    }
+    if (normalizedComment.length < 3 || !/[\p{L}\p{N}]/u.test(normalizedComment)) {
+      toast.error("Feedback must be at least 3 characters")
+      return
+    }
     const isEditing = Boolean(selectedBooking.reviewId)
-    setError(null)
 
     startTransition(async () => {
       try {
@@ -116,7 +123,7 @@ export function BookingsTable({ bookings }: BookingsTableProps) {
               bookingId: selectedBooking.backendId,
               serviceId: selectedBooking.serviceId,
               rating,
-              comment,
+              comment: normalizedComment,
             }),
           },
         )
@@ -125,15 +132,14 @@ export function BookingsTable({ bookings }: BookingsTableProps) {
           const payload = (await response.json().catch(() => null)) as
             | { message?: string }
             | null
-          setError(payload?.message ?? "Unable to save review")
-          return
+          throw new Error(payload?.message ?? "Unable to save review")
         }
 
         toast.success(isEditing ? "Review updated successfully" : "Review saved successfully")
         setSelectedBooking(null)
         router.refresh()
-      } catch {
-        setError("Unable to reach the server. Please try again.")
+      } catch (caught) {
+        toast.error(caught instanceof Error ? caught.message : "Unable to reach the server. Please try again.")
       }
     })
   }
@@ -287,7 +293,7 @@ export function BookingsTable({ bookings }: BookingsTableProps) {
           <div className="space-y-4">
             <div>
               <div className="mb-2 text-sm font-medium text-foreground">
-                Rating
+                Rating<RequiredMark />
               </div>
               <div className="flex gap-1">
                 {Array.from({ length: 5 }).map((_, index) => {
@@ -314,12 +320,14 @@ export function BookingsTable({ bookings }: BookingsTableProps) {
             </div>
 
             <label className="grid gap-2 text-sm font-medium text-foreground">
-              Feedback
+              Feedback<RequiredMark />
               <textarea
                 value={comment}
                 onChange={(event) => setComment(event.target.value)}
                 className="min-h-28 rounded-sm border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
                 maxLength={1000}
+                minLength={3}
+                required
                 placeholder="Share your service experience"
               />
             </label>
@@ -333,9 +341,6 @@ export function BookingsTable({ bookings }: BookingsTableProps) {
               </div>
             ) : null}
 
-            {error ? (
-              <p className="text-sm font-medium text-destructive">{error}</p>
-            ) : null}
           </div>
 
           <DialogFooter>

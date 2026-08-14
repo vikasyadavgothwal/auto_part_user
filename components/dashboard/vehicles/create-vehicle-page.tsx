@@ -15,7 +15,6 @@ import { type VehicleFormValues } from "@/lib/vehicles"
 
 export function CreateVehiclePage() {
   const router = useRouter()
-  const [error, setError] = useState("")
   const [pending, setPending] = useState(false)
 
   async function lookupVin(vin: string) {
@@ -26,7 +25,6 @@ export function CreateVehiclePage() {
 
   async function handleCreateVehicle(values: VehicleFormValues) {
     setPending(true)
-    setError("")
     try {
       const response = await authenticatedFetch(withBasePath("/api/vehicles"), {
         method: "POST",
@@ -51,7 +49,6 @@ export function CreateVehiclePage() {
       router.refresh()
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Unable to create vehicle"
-      setError(message)
       toast.error(message)
     } finally {
       setPending(false)
@@ -88,11 +85,6 @@ export function CreateVehiclePage() {
 
       <Card className="rounded-sm border border-border bg-brand-panel shadow-none">
         <CardContent className="p-6">
-          {error ? (
-            <p className="mb-4 rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </p>
-          ) : null}
           <VehicleForm
             submitLabel={pending ? "Creating..." : "Create Vehicle"}
             onVinLookup={lookupVin}

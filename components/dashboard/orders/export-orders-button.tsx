@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Download } from "lucide-react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { readApiResponse } from "@/lib/api-response"
@@ -157,11 +158,9 @@ const downloadCsv = (orders: ExportOrder[]) => {
 
 export function ExportOrdersButton() {
   const [isExporting, setIsExporting] = useState(false)
-  const [error, setError] = useState("")
 
   async function handleExport() {
     setIsExporting(true)
-    setError("")
 
     try {
       const orders: ExportOrder[] = []
@@ -190,8 +189,9 @@ export function ExportOrdersButton() {
       }
 
       downloadCsv(orders)
+      toast.success("Orders exported successfully")
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to export orders")
+      toast.error(caught instanceof Error ? caught.message : "Unable to export orders")
     } finally {
       setIsExporting(false)
     }
@@ -209,11 +209,6 @@ export function ExportOrdersButton() {
         <Download className="h-5 w-5" />
         {isExporting ? "Exporting..." : "Export Orders"}
       </Button>
-      {error ? (
-        <p className="max-w-xs text-left text-xs font-medium text-destructive sm:text-right">
-          {error}
-        </p>
-      ) : null}
     </div>
   )
 }

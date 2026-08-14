@@ -62,6 +62,17 @@ type RfqImportResponse = {
 type FieldErrors = Record<string, string>
 
 const maxParts = 20
+const maxImportFileSize = 5 * 1024 * 1024
+const allowedImportExtensions = new Set(["csv", "xlsx", "xls"])
+const allowedImportMimeTypes: Record<string, Set<string>> = {
+  csv: new Set(["text/csv", "application/csv", "text/plain", "application/vnd.ms-excel"]),
+  xls: new Set(["application/vnd.ms-excel", "application/octet-stream"]),
+  xlsx: new Set([
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/zip",
+    "application/octet-stream",
+  ]),
+}
 
 const newPart = (id: number): PartItem => ({
   id,
@@ -112,6 +123,10 @@ const addTextError = (
     errors[key] = `${label} is required`
     return normalized
   }
+  if (required && !/[\p{L}\p{N}]/u.test(normalized)) {
+    errors[key] = `${label} must include a letter or number`
+    return normalized
+  }
   if (normalized.length > maxLength) {
     errors[key] = `${label} must be ${maxLength} characters or fewer`
   }
@@ -155,7 +170,7 @@ const addVinError = (
 }
 
 const addEmailError = (errors: FieldErrors, key: string, value: string) => {
-  const normalized = addTextError(errors, key, value, "Email", 180)
+  const normalized = addTextError(errors, key, value, "Email", 254)
   if (normalized && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
     errors[key] = "Enter a valid email address"
   }
@@ -164,7 +179,11 @@ const addEmailError = (errors: FieldErrors, key: string, value: string) => {
 
 const addPhoneError = (errors: FieldErrors, key: string, value: string) => {
   const normalized = addTextError(errors, key, value, "Phone", 20)
-  if (normalized && !/^[+\d][\d\s()-]{6,20}$/.test(normalized)) {
+  const digits = normalized.replace(/\D/g, "")
+  if (
+    normalized &&
+    (!/^\+?[0-9\s()-]+$/.test(normalized) || digits.length < 7 || digits.length > 15)
+  ) {
     errors[key] = "Enter a valid phone number"
   }
   return normalized
@@ -203,7 +222,6 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
   const [contactName, setContactName] = useState(userName(user))
   const [email, setEmail] = useState(user.email || "")
   const [phone, setPhone] = useState(user.phone || "")
-  const [submitError, setSubmitError] = useState("")
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
@@ -232,7 +250,7 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
         }
       })
       .catch((caught) => {
-        setSubmitError(caught instanceof Error ? caught.message : "Unable to load vehicles")
+        toast.error(caught instanceof Error ? caught.message : "Unable to load vehicles")
       })
   }, [])
 
@@ -394,18 +412,32 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
   function addPart() {
     if (parts.length >= maxParts) {
       const message = `An RFQ can include up to ${maxParts} parts.`
-      setSubmitError(message)
       toast.error(message)
       return
     }
-    setSubmitError("")
     setParts((current) => [...current, newPart(Date.now())])
   }
 
   async function importRfqFile(file: File | undefined) {
     if (!file) return
+    const extension = file.name.split(".").pop()?.toLowerCase() ?? ""
+    if (!allowedImportExtensions.has(extension)) {
+      toast.error("Choose a CSV, XLSX, or XLS file")
+      return
+    }
+    if (file.size <= 0) {
+      toast.error("The selected RFQ import file is empty")
+      return
+    }
+    if (file.size > maxImportFileSize) {
+      toast.error("RFQ import files must be 5 MB or smaller")
+      return
+    }
+    if (file.type && !allowedImportMimeTypes[extension]?.has(file.type.toLowerCase())) {
+      toast.error("The selected file type does not match its extension")
+      return
+    }
     setIsImporting(true)
-    setSubmitError("")
     try {
       const body = new FormData()
       body.set("file", file)
@@ -426,7 +458,6 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
       toast.success("RFQ file imported successfully")
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Unable to import RFQ file"
-      setSubmitError(message)
       toast.error(message)
     } finally {
       setIsImporting(false)
@@ -456,11 +487,9 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
     setFieldErrors(errors)
     if (Object.keys(errors).length) {
       const message = "Fix the highlighted fields before continuing."
-      setSubmitError(message)
       toast.error(message)
       return
     }
-    setSubmitError("")
     if (step === 1) {
       setIsImporting(true)
       try {
@@ -468,7 +497,6 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
         setStep(2)
       } catch (caught) {
         const message = caught instanceof Error ? caught.message : "Unable to validate VIN"
-        setSubmitError(message)
         toast.error(message)
       }
       finally { setIsImporting(false) }
@@ -482,13 +510,11 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
   }
 
   async function handleSubmit() {
-    setSubmitError("")
     const errors = { ...validateParts(), ...validateDetails() }
     setFieldErrors(errors)
     if (Object.keys(errors).length) {
       setStep(firstStepForErrors(errors))
       const message = "Fix the highlighted fields before submitting."
-      setSubmitError(message)
       toast.error(message)
       return
     }
@@ -555,7 +581,6 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
       router.refresh()
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Unable to submit RFQ"
-      setSubmitError(message)
       toast.error(message)
     } finally {
       setIsSubmitting(false)
@@ -593,12 +618,6 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
           )
         })}
       </div>
-
-      {submitError ? (
-        <p className="rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          {submitError}
-        </p>
-      ) : null}
 
       {step === 1 ? (
         <RfqVehicleSection

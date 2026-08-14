@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/ui/required-mark";
 import type { UserProfileFormValues } from "@/lib/user-settings";
 import type {
   UserAddressFormValues,
@@ -69,32 +70,6 @@ export function SettingsHeader() {
         Manage your profile details and verified contact information.
       </p>
     </div>
-  );
-}
-
-export function SettingsAlerts({
-  message,
-  error,
-}: {
-  message: string;
-  error: string;
-}) {
-  return (
-    <>
-      {message ? (
-        <p className="break-words rounded-lg border border-green-500/20 bg-green-500/10 px-4 py-3 text-sm text-green-400">
-          {message}
-        </p>
-      ) : null}
-      {error ? (
-        <p
-          role="alert"
-          className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400"
-        >
-          {error}
-        </p>
-      ) : null}
-    </>
   );
 }
 
@@ -146,6 +121,7 @@ export function ContactVerificationSection({
             id="user-email"
             type="email"
             value={form.email}
+            maxLength={254}
             onChange={(event) => setField("email", event.target.value)}
             className="h-11 border-[#2A2A2A] bg-[#0A0A0A]"
           />
@@ -205,6 +181,7 @@ export function ContactVerificationSection({
                 setMobileNumber(mobileCountryCode, event.target.value)
               }
               inputMode="numeric"
+              maxLength={14}
               autoComplete="tel-national"
               placeholder="Mobile number"
               className="h-11 min-w-0 rounded-l-none border-l-0 border-[#2A2A2A] bg-[#0A0A0A]"
@@ -222,16 +199,23 @@ export function ContactVerificationSection({
                 <MessageSquareText className="size-4" />
                 {isSendingOtp ? "Sending..." : "Send OTP"}
               </Button>
-              <Input
-                value={otp}
-                onChange={(event) =>
-                  setOtp(normalizeDigits(event.target.value, 6))
-                }
-                placeholder="OTP"
-                inputMode="numeric"
-                maxLength={6}
-                className="h-9 border-[#2A2A2A] bg-[#0A0A0A] sm:max-w-32"
-              />
+              <div className="space-y-1 sm:max-w-32">
+                <Label htmlFor="user-mobile-otp">OTP<RequiredMark /></Label>
+                <Input
+                  id="user-mobile-otp"
+                  value={otp}
+                  onChange={(event) =>
+                    setOtp(normalizeDigits(event.target.value, 6))
+                  }
+                  placeholder="6 digits"
+                  inputMode="numeric"
+                  pattern="[0-9]{6}"
+                  minLength={6}
+                  maxLength={6}
+                  required
+                  className="h-9 border-[#2A2A2A] bg-[#0A0A0A]"
+                />
+              </div>
               <Button
                 type="button"
                 variant="outline"
@@ -266,7 +250,7 @@ export function ProfileInformationSection({
 }) {
   // FIX: Extracted profile information markup without changing form submission.
   return (
-    <form className="space-y-8" onSubmit={saveSettings}>
+    <form noValidate className="space-y-8" onSubmit={saveSettings}>
       <Card className="rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] shadow-none">
         <CardHeader>
           <CardTitle className="text-white">Profile Information</CardTitle>
@@ -277,16 +261,20 @@ export function ProfileInformationSection({
             <Input
               id="company-name"
               value={form.companyName}
+              maxLength={160}
               onChange={(event) => setField("companyName", event.target.value)}
               className="h-11 border-[#2A2A2A] bg-[#0A0A0A]"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="first-name">First Name</Label>
+            <Label htmlFor="first-name">First Name<RequiredMark /></Label>
             <Input
               id="first-name"
               value={form.firstName}
+              minLength={2}
+              maxLength={100}
+              required
               onChange={(event) => setField("firstName", event.target.value)}
               className="h-11 border-[#2A2A2A] bg-[#0A0A0A]"
             />
@@ -297,6 +285,7 @@ export function ProfileInformationSection({
             <Input
               id="last-name"
               value={form.lastName}
+              maxLength={100}
               onChange={(event) => setField("lastName", event.target.value)}
               className="h-11 border-[#2A2A2A] bg-[#0A0A0A]"
             />
@@ -319,7 +308,6 @@ export function ProfileInformationSection({
 }
 
 type SavedDeliveryAddressesSectionProps = {
-  addressError: string;
   isLoadingAddresses: boolean;
   addresses: UserAddressRecord[];
   addressForm: UserAddressFormValues;
@@ -333,12 +321,10 @@ type SavedDeliveryAddressesSectionProps = {
   openEditAddress: (address: UserAddressRecord) => void;
   setDefaultAddress: (address: UserAddressRecord) => void;
   setAddressPendingDelete: (address: UserAddressRecord) => void;
-  setAddressError: (value: string) => void;
   saveAddress: () => void;
 };
 
 export function SavedDeliveryAddressesSection({
-  addressError,
   isLoadingAddresses,
   addresses,
   addressForm,
@@ -349,7 +335,6 @@ export function SavedDeliveryAddressesSection({
   openEditAddress,
   setDefaultAddress,
   setAddressPendingDelete,
-  setAddressError,
   saveAddress,
 }: SavedDeliveryAddressesSectionProps) {
   // FIX: Extracted saved delivery address markup without changing handlers.
@@ -366,15 +351,6 @@ export function SavedDeliveryAddressesSection({
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
-        {addressError ? (
-          <p
-            role="alert"
-            className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400"
-          >
-            {addressError}
-          </p>
-        ) : null}
-
         {isLoadingAddresses ? (
           <p className="text-sm text-[#9CA3AF]">Loading addresses...</p>
         ) : addresses.length ? (
@@ -430,7 +406,6 @@ export function SavedDeliveryAddressesSection({
                       size="icon"
                       onClick={() => {
                         setAddressPendingDelete(address);
-                        setAddressError("");
                       }}
                       disabled={deletingAddressId === address.id}
                       aria-label="Delete address"
@@ -463,19 +438,23 @@ export function SavedDeliveryAddressesSection({
 
         <div className="grid gap-6 rounded-lg border border-[#2A2A2A] bg-[#0A0A0A] p-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="delivery-label">Address Label</Label>
+            <Label htmlFor="delivery-label">Address Label<RequiredMark /></Label>
             <Input
               id="delivery-label"
               value={addressForm.label}
+              maxLength={60}
+              required
               onChange={(event) => setAddressField("label", event.target.value)}
               className="h-11 border-[#2A2A2A] bg-[#111111]"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="delivery-recipient">Recipient Name</Label>
+            <Label htmlFor="delivery-recipient">Recipient Name<RequiredMark /></Label>
             <Input
               id="delivery-recipient"
               value={addressForm.recipientName}
+              maxLength={120}
+              required
               onChange={(event) =>
                 setAddressField("recipientName", event.target.value)
               }
@@ -483,19 +462,24 @@ export function SavedDeliveryAddressesSection({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="delivery-phone">Phone</Label>
+            <Label htmlFor="delivery-phone">Phone<RequiredMark /></Label>
             <Input
               id="delivery-phone"
               value={addressForm.phone}
+              type="tel"
+              maxLength={25}
+              required
               onChange={(event) => setAddressField("phone", event.target.value)}
               className="h-11 border-[#2A2A2A] bg-[#111111]"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="delivery-postal">Postal Code</Label>
+            <Label htmlFor="delivery-postal">Postal Code<RequiredMark /></Label>
             <Input
               id="delivery-postal"
               value={addressForm.postalCode}
+              maxLength={20}
+              required
               onChange={(event) =>
                 setAddressField("postalCode", event.target.value)
               }
@@ -503,10 +487,12 @@ export function SavedDeliveryAddressesSection({
             />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="delivery-line-1">Address Line 1</Label>
+            <Label htmlFor="delivery-line-1">Address Line 1<RequiredMark /></Label>
             <Input
               id="delivery-line-1"
               value={addressForm.addressLine1}
+              maxLength={255}
+              required
               onChange={(event) =>
                 setAddressField("addressLine1", event.target.value)
               }
@@ -518,6 +504,7 @@ export function SavedDeliveryAddressesSection({
             <Input
               id="delivery-line-2"
               value={addressForm.addressLine2}
+              maxLength={255}
               onChange={(event) =>
                 setAddressField("addressLine2", event.target.value)
               }
@@ -529,6 +516,7 @@ export function SavedDeliveryAddressesSection({
             <Input
               id="delivery-landmark"
               value={addressForm.landmark}
+              maxLength={160}
               onChange={(event) =>
                 setAddressField("landmark", event.target.value)
               }
@@ -536,28 +524,34 @@ export function SavedDeliveryAddressesSection({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="delivery-city">City</Label>
+            <Label htmlFor="delivery-city">City<RequiredMark /></Label>
             <Input
               id="delivery-city"
               value={addressForm.city}
+              maxLength={120}
+              required
               onChange={(event) => setAddressField("city", event.target.value)}
               className="h-11 border-[#2A2A2A] bg-[#111111]"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="delivery-state">State</Label>
+            <Label htmlFor="delivery-state">State<RequiredMark /></Label>
             <Input
               id="delivery-state"
               value={addressForm.state}
+              maxLength={120}
+              required
               onChange={(event) => setAddressField("state", event.target.value)}
               className="h-11 border-[#2A2A2A] bg-[#111111]"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="delivery-country">Country</Label>
+            <Label htmlFor="delivery-country">Country<RequiredMark /></Label>
             <Input
               id="delivery-country"
               value={addressForm.country}
+              maxLength={120}
+              required
               onChange={(event) =>
                 setAddressField("country", event.target.value)
               }
@@ -595,7 +589,6 @@ export function SavedDeliveryAddressesSection({
 type EditAddressDialogProps = {
   editingAddress: UserAddressRecord | null;
   editAddressForm: UserAddressFormValues;
-  editAddressError: string;
   isUpdatingAddress: boolean;
   setEditAddressField: <Key extends keyof UserAddressFormValues>(
     key: Key,
@@ -608,7 +601,6 @@ type EditAddressDialogProps = {
 export function EditAddressDialog({
   editingAddress,
   editAddressForm,
-  editAddressError,
   isUpdatingAddress,
   setEditAddressField,
   closeEditAddress,
@@ -631,26 +623,20 @@ export function EditAddressDialog({
         </DialogHeader>
 
         <form
+          noValidate
           className="grid gap-6 px-6 py-5 md:grid-cols-2"
           onSubmit={(event) => {
             event.preventDefault();
             updateAddress();
           }}
         >
-          {editAddressError ? (
-            <p
-              role="alert"
-              className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400 md:col-span-2"
-            >
-              {editAddressError}
-            </p>
-          ) : null}
-
           <div className="space-y-2">
-            <Label htmlFor="edit-delivery-label">Address Label</Label>
+            <Label htmlFor="edit-delivery-label">Address Label<RequiredMark /></Label>
             <Input
               id="edit-delivery-label"
               value={editAddressForm.label}
+              maxLength={60}
+              required
               onChange={(event) =>
                 setEditAddressField("label", event.target.value)
               }
@@ -658,10 +644,12 @@ export function EditAddressDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-delivery-recipient">Recipient Name</Label>
+            <Label htmlFor="edit-delivery-recipient">Recipient Name<RequiredMark /></Label>
             <Input
               id="edit-delivery-recipient"
               value={editAddressForm.recipientName}
+              maxLength={120}
+              required
               onChange={(event) =>
                 setEditAddressField("recipientName", event.target.value)
               }
@@ -669,10 +657,13 @@ export function EditAddressDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-delivery-phone">Phone</Label>
+            <Label htmlFor="edit-delivery-phone">Phone<RequiredMark /></Label>
             <Input
               id="edit-delivery-phone"
               value={editAddressForm.phone}
+              type="tel"
+              maxLength={25}
+              required
               onChange={(event) =>
                 setEditAddressField("phone", event.target.value)
               }
@@ -680,10 +671,12 @@ export function EditAddressDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-delivery-postal">Postal Code</Label>
+            <Label htmlFor="edit-delivery-postal">Postal Code<RequiredMark /></Label>
             <Input
               id="edit-delivery-postal"
               value={editAddressForm.postalCode}
+              maxLength={20}
+              required
               onChange={(event) =>
                 setEditAddressField("postalCode", event.target.value)
               }
@@ -691,10 +684,12 @@ export function EditAddressDialog({
             />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="edit-delivery-line-1">Address Line 1</Label>
+            <Label htmlFor="edit-delivery-line-1">Address Line 1<RequiredMark /></Label>
             <Input
               id="edit-delivery-line-1"
               value={editAddressForm.addressLine1}
+              maxLength={255}
+              required
               onChange={(event) =>
                 setEditAddressField("addressLine1", event.target.value)
               }
@@ -706,6 +701,7 @@ export function EditAddressDialog({
             <Input
               id="edit-delivery-line-2"
               value={editAddressForm.addressLine2}
+              maxLength={255}
               onChange={(event) =>
                 setEditAddressField("addressLine2", event.target.value)
               }
@@ -717,6 +713,7 @@ export function EditAddressDialog({
             <Input
               id="edit-delivery-landmark"
               value={editAddressForm.landmark}
+              maxLength={160}
               onChange={(event) =>
                 setEditAddressField("landmark", event.target.value)
               }
@@ -724,10 +721,12 @@ export function EditAddressDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-delivery-city">City</Label>
+            <Label htmlFor="edit-delivery-city">City<RequiredMark /></Label>
             <Input
               id="edit-delivery-city"
               value={editAddressForm.city}
+              maxLength={120}
+              required
               onChange={(event) =>
                 setEditAddressField("city", event.target.value)
               }
@@ -735,10 +734,12 @@ export function EditAddressDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-delivery-state">State</Label>
+            <Label htmlFor="edit-delivery-state">State<RequiredMark /></Label>
             <Input
               id="edit-delivery-state"
               value={editAddressForm.state}
+              maxLength={120}
+              required
               onChange={(event) =>
                 setEditAddressField("state", event.target.value)
               }
@@ -746,10 +747,12 @@ export function EditAddressDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-delivery-country">Country</Label>
+            <Label htmlFor="edit-delivery-country">Country<RequiredMark /></Label>
             <Input
               id="edit-delivery-country"
               value={editAddressForm.country}
+              maxLength={120}
+              required
               onChange={(event) =>
                 setEditAddressField("country", event.target.value)
               }

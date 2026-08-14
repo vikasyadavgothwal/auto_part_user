@@ -6,6 +6,7 @@ import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RequiredMark } from "@/components/ui/required-mark"
 
 type PartItem = {
   id: number
@@ -81,12 +82,13 @@ export function RfqPartsSection({
               </Button>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="space-y-2 md:col-span-2"><Label>{selectedVehicleId ? "Different vehicle VIN (optional)" : "Vehicle VIN *"}</Label><Input value={part.vin ?? ""} maxLength={17} aria-invalid={Boolean(fieldErrors[partErrorKey(part.id, "vin")])} onChange={(event) => updatePart(part.id, "vin", event.target.value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, ""))} placeholder={selectedVehicleId ? "Leave blank to use the selected vehicle" : "Enter the 17-character VIN"} className="h-10 uppercase border-border bg-brand-panel" /><span className="block text-xs text-brand-muted">{selectedVehicleId ? "Only enter this when this part is for another vehicle." : "Required because no saved vehicle is selected."}</span>{fieldError(partErrorKey(part.id, "vin"))}</label>
+              <label className="space-y-2 md:col-span-2"><Label>{selectedVehicleId ? "Different vehicle VIN (optional)" : <>Vehicle VIN<RequiredMark /></>}</Label><Input value={part.vin ?? ""} maxLength={17} required={!selectedVehicleId} aria-invalid={Boolean(fieldErrors[partErrorKey(part.id, "vin")])} onChange={(event) => updatePart(part.id, "vin", event.target.value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, ""))} placeholder={selectedVehicleId ? "Leave blank to use the selected vehicle" : "Enter the 17-character VIN"} className="h-10 uppercase border-border bg-brand-panel" /><span className="block text-xs text-brand-muted">{selectedVehicleId ? "Only enter this when this part is for another vehicle." : "Required because no saved vehicle is selected."}</span>{fieldError(partErrorKey(part.id, "vin"))}</label>
               <label className="space-y-2">
-                <Label>Part Name *</Label>
+                <Label>Part Name<RequiredMark /></Label>
                 <Input
                   value={part.partName}
                   maxLength={120}
+                  required
                   aria-invalid={Boolean(fieldErrors[partErrorKey(part.id, "partName")])}
                   onChange={(event) => updatePart(part.id, "partName", event.target.value)}
                   placeholder="Brake pads"
@@ -107,13 +109,14 @@ export function RfqPartsSection({
                 {fieldError(partErrorKey(part.id, "partNumber"))}
               </label>
               <label className="space-y-2">
-                <Label>Quantity *</Label>
+                <Label>Quantity<RequiredMark /></Label>
                 <Input
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={part.quantity}
                   maxLength={3}
+                  required
                   aria-invalid={Boolean(fieldErrors[partErrorKey(part.id, "quantity")])}
                   onChange={(event) =>
                     updatePart(

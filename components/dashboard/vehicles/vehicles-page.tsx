@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { Plus } from "lucide-react"
+import { toast } from "sonner"
 
 import { EditVehicleDialog } from "@/components/dashboard/vehicles/edit-vehicle-dialog"
 import { VehicleStats } from "@/components/dashboard/vehicles/vehicle-stats"
@@ -56,12 +57,10 @@ export function VehiclesPage() {
   const [vehicles, setVehicles] = useState<VehicleRecord[]>([])
   const [editVehicle, setEditVehicle] = useState<VehicleRecord | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState("")
   const [pagination, setPagination] = useState<VehiclePagination>(emptyPagination)
 
   const loadVehicles = useCallback(async (page: number) => {
     setIsLoading(true)
-    setError("")
     try {
       const response = await authenticatedFetch(
         withBasePath(`/api/vehicles?page=${page}&pageSize=${vehiclePageSize}`),
@@ -102,7 +101,7 @@ export function VehiclesPage() {
       setVehicles(nextVehicles)
       setPagination(nextPagination)
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to load vehicles")
+      toast.error(caught instanceof Error ? caught.message : "Unable to load vehicles")
       setVehicles([])
       setPagination(emptyPagination)
     } finally {
@@ -155,7 +154,6 @@ export function VehiclesPage() {
     if (!editVehicle) {
       return
     }
-    setError("")
     try {
       const response = await authenticatedFetch(
         withBasePath(`/api/vehicles/${editVehicle.id}`),
@@ -172,8 +170,9 @@ export function VehiclesPage() {
       )
       setEditVehicle(null)
       await loadVehicles(pagination.page)
+      toast.success("Vehicle updated successfully")
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to save vehicle")
+      toast.error(caught instanceof Error ? caught.message : "Unable to save vehicle")
     }
   }
 
@@ -190,7 +189,6 @@ export function VehiclesPage() {
     if (!confirmed) {
       return
     }
-    setError("")
     try {
       const response = await authenticatedFetch(
         withBasePath(`/api/vehicles/${vehicleId}`),
@@ -209,8 +207,9 @@ export function VehiclesPage() {
           ? pagination.page - 1
           : pagination.page
       await loadVehicles(nextPage)
+      toast.success("Vehicle deleted successfully")
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to delete vehicle")
+      toast.error(caught instanceof Error ? caught.message : "Unable to delete vehicle")
     }
   }
 
@@ -239,11 +238,6 @@ export function VehiclesPage() {
         </div>
 
         <VehicleStats stats={stats} />
-        {error ? (
-          <p className="rounded-sm border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
-          </p>
-        ) : null}
         {isLoading ? (
           <p className="rounded-sm border border-border bg-brand-panel p-6 text-sm text-brand-muted">
             Loading vehicles...

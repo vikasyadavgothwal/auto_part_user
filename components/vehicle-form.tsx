@@ -1,10 +1,12 @@
 "use client"
 import { useState } from "react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RequiredMark } from "@/components/ui/required-mark"
 import { cn } from "@/lib/utils"
 import {
   emptyVehicleFormValues,
@@ -29,11 +31,13 @@ type VehicleFormProps = {
 type VehicleFormErrors = Partial<Record<keyof VehicleFormValues, string>>
 
 const currentVehicleYear = new Date().getFullYear() + 1
-const maxMileage = 2_000_000
+const minMileage = 1
+const maxMileage = 70
 const vehicleStatusSet = new Set<VehicleStatus>(vehicleStatusOptions)
 const digitsOnly = (value: string) => value.replace(/\D/g, "")
 const vinInput = (value: string) =>
-  value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17)
+  value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, "").slice(0, 17)
+const hasAlphanumeric = (value: string) => /[\p{L}\p{N}]/u.test(value)
 
 function validateVehicleForm(values: VehicleFormValues) {
   const nextValues: VehicleFormValues = {
@@ -61,12 +65,16 @@ function validateVehicleForm(values: VehicleFormValues) {
 
   if (!nextValues.make) {
     errors.make = "Make is required"
+  } else if (!hasAlphanumeric(nextValues.make)) {
+    errors.make = "Make must include letters or numbers"
   } else if (nextValues.make.length > 80) {
     errors.make = "Make must be 80 characters or fewer"
   }
 
   if (!nextValues.model) {
     errors.model = "Model is required"
+  } else if (!hasAlphanumeric(nextValues.model)) {
+    errors.model = "Model must include letters or numbers"
   } else if (nextValues.model.length > 80) {
     errors.model = "Model must be 80 characters or fewer"
   }
@@ -79,8 +87,12 @@ function validateVehicleForm(values: VehicleFormValues) {
 
   if (!nextValues.mileage) {
     errors.mileage = "Mileage is required"
-  } else if (!Number.isInteger(parsedMileage) || parsedMileage > maxMileage) {
-    errors.mileage = `Mileage must be a whole number up to ${maxMileage.toLocaleString()}`
+  } else if (
+    !Number.isInteger(parsedMileage) ||
+    parsedMileage < minMileage ||
+    parsedMileage > maxMileage
+  ) {
+    errors.mileage = `Mileage must be a whole number between ${minMileage} and ${maxMileage.toLocaleString()}`
   }
 
   if (!vehicleStatusSet.has(nextValues.status)) {
@@ -109,7 +121,9 @@ export function VehicleForm({
     if (!onVinLookup) return
     const vin = vinInput(values.vin)
     if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)) {
-      setErrors((current) => ({ ...current, vin: "VIN must be exactly 17 characters and cannot include I, O, or Q" }))
+      const message = "VIN must be exactly 17 characters and cannot include I, O, or Q"
+      setErrors((current) => ({ ...current, vin: message }))
+      toast.error(message)
       return
     }
     setIsLookingUpVin(true)
@@ -121,6 +135,7 @@ export function VehicleForm({
         setVinResolved(true)
         setManualEntry(false)
         setVinMessage("Vehicle found. Year, make and model were filled automatically.")
+        toast.success("Vehicle found successfully")
       } else {
         setVinResolved(true)
         setManualEntry(true)
@@ -129,7 +144,9 @@ export function VehicleForm({
     } catch (error) {
       setVinResolved(true)
       setManualEntry(true)
-      setVinMessage(error instanceof Error ? error.message : "Unable to look up VIN")
+      const message = error instanceof Error ? error.message : "Unable to look up VIN"
+      setVinMessage(message)
+      toast.error(message)
     } finally {
       setIsLookingUpVin(false)
     }
@@ -167,6 +184,7 @@ export function VehicleForm({
         if (Object.keys(result.errors).length) {
           setValues(result.values)
           setErrors(result.errors)
+          toast.error(Object.values(result.errors)[0] ?? "Check the highlighted vehicle fields")
           return
         }
         setErrors({})
@@ -175,13 +193,14 @@ export function VehicleForm({
     >
       {onVinLookup ? (
         <div className="space-y-2 rounded-sm border border-border bg-brand-surface p-4">
-          <Label htmlFor="vehicle-vin">VIN first</Label>
+          <Label htmlFor="vehicle-vin">VIN first<RequiredMark /></Label>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Input
               id="vehicle-vin"
               placeholder="JT2BF22K6X0123456"
               value={values.vin}
               maxLength={17}
+              required
               aria-invalid={Boolean(errors.vin)}
               onChange={(event) => {
                 updateValue("vin", vinInput(event.target.value))
@@ -212,11 +231,12 @@ export function VehicleForm({
 
       {vinResolved ? <div className="grid gap-4 md:grid-cols-3">
         <div className="space-y-2">
-          <Label htmlFor="vehicle-year">Year</Label>
+          <Label htmlFor="vehicle-year">Year<RequiredMark /></Label>
           <Input
             id="vehicle-year"
             inputMode="numeric"
             maxLength={4}
+            required
             placeholder="2019"
             value={values.year}
             aria-invalid={Boolean(errors.year)}
@@ -230,12 +250,13 @@ export function VehicleForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="vehicle-make">Make</Label>
+          <Label htmlFor="vehicle-make">Make<RequiredMark /></Label>
           <Input
             id="vehicle-make"
             placeholder="Toyota"
             value={values.make}
             maxLength={80}
+            required
             aria-invalid={Boolean(errors.make)}
             readOnly={Boolean(onVinLookup && !manualEntry)}
             onChange={(event) => updateValue("make", event.target.value)}
@@ -245,12 +266,13 @@ export function VehicleForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="vehicle-model">Model</Label>
+          <Label htmlFor="vehicle-model">Model<RequiredMark /></Label>
           <Input
             id="vehicle-model"
             placeholder="Camry"
             value={values.model}
             maxLength={80}
+            required
             aria-invalid={Boolean(errors.model)}
             readOnly={Boolean(onVinLookup && !manualEntry)}
             onChange={(event) => updateValue("model", event.target.value)}
@@ -262,12 +284,13 @@ export function VehicleForm({
 
       {vinResolved ? <div className="grid gap-4 md:grid-cols-2">
         {!onVinLookup ? <div className="space-y-2">
-          <Label htmlFor="vehicle-vin">VIN</Label>
+          <Label htmlFor="vehicle-vin">VIN<RequiredMark /></Label>
           <Input
             id="vehicle-vin"
             placeholder="JT2BF22K6X0123456"
             value={values.vin}
             maxLength={17}
+            required
             aria-invalid={Boolean(errors.vin)}
             onChange={(event) => updateValue("vin", vinInput(event.target.value))}
             className="h-10 border-border bg-brand-surface uppercase"
@@ -276,13 +299,14 @@ export function VehicleForm({
         </div> : null}
 
         <div className="space-y-2">
-          <Label htmlFor="vehicle-mileage">Mileage</Label>
+          <Label htmlFor="vehicle-mileage">Mileage<RequiredMark /></Label>
           <Input
             id="vehicle-mileage"
             inputMode="numeric"
             placeholder="45234"
             value={values.mileage}
             maxLength={7}
+            required
             aria-invalid={Boolean(errors.mileage)}
             onChange={(event) =>
               updateValue("mileage", digitsOnly(event.target.value).slice(0, 7))
@@ -295,11 +319,12 @@ export function VehicleForm({
 
       {vinResolved ? <div className="grid gap-4 md:grid-cols-[minmax(0,220px)_1fr] md:items-end">
         <div className="space-y-2">
-          <Label htmlFor="vehicle-status">Status</Label>
+          <Label htmlFor="vehicle-status">Status<RequiredMark /></Label>
           <select
             id="vehicle-status"
             value={values.status}
             aria-invalid={Boolean(errors.status)}
+            required
             onChange={(event) =>
               updateValue("status", event.target.value as VehicleStatus)
             }
