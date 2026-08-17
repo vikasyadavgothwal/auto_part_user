@@ -10,6 +10,15 @@ import { VehicleStats } from "@/components/dashboard/vehicles/vehicle-stats"
 import { VehiclesInfoCard } from "@/components/dashboard/vehicles/vehicles-info-card"
 import { VehiclesTable } from "@/components/dashboard/vehicles/vehicles-table"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { readApiResponse } from "@/lib/api-response"
 import { authenticatedFetch } from "@/lib/auth/client"
 import { appRoutes, withBasePath } from "@/lib/routes"
@@ -56,6 +65,7 @@ const vehiclePayload = (values: VehicleFormValues) => ({
 export function VehiclesPage() {
   const [vehicles, setVehicles] = useState<VehicleRecord[]>([])
   const [editVehicle, setEditVehicle] = useState<VehicleRecord | null>(null)
+  const [deleteVehicle, setDeleteVehicle] = useState<VehicleRecord | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [pagination, setPagination] = useState<VehiclePagination>(emptyPagination)
 
@@ -176,19 +186,19 @@ export function VehiclesPage() {
     }
   }
 
-  async function handleDeleteVehicle(vehicleId: string) {
+  function handleDeleteVehicle(vehicleId: string) {
     const vehicleToDelete = vehicles.find(
       (vehicle) => vehicle.id === vehicleId
     )
     if (!vehicleToDelete) {
       return
     }
-    const confirmed = window.confirm(
-      `Remove ${getVehicleDisplayName(vehicleToDelete)} from your vehicles?`
-    )
-    if (!confirmed) {
-      return
-    }
+    setDeleteVehicle(vehicleToDelete)
+  }
+
+  async function confirmDeleteVehicle() {
+    if (!deleteVehicle) return
+    const vehicleId = deleteVehicle.id
     try {
       const response = await authenticatedFetch(
         withBasePath(`/api/vehicles/${vehicleId}`),
@@ -202,6 +212,7 @@ export function VehiclesPage() {
       if (editVehicle?.id === vehicleId) {
         setEditVehicle(null)
       }
+      setDeleteVehicle(null)
       const nextPage =
         vehicles.length === 1 && pagination.page > 1
           ? pagination.page - 1
@@ -289,6 +300,24 @@ export function VehiclesPage() {
         onSubmit={handleEditSubmit}
         onCancel={() => setEditVehicle(null)}
       />
+      <Dialog open={Boolean(deleteVehicle)} onOpenChange={(open) => { if (!open) setDeleteVehicle(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove vehicle</DialogTitle>
+            <DialogDescription>
+              Remove {deleteVehicle ? getVehicleDisplayName(deleteVehicle) : "this vehicle"} from your vehicles?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button type="button" variant="destructive" onClick={() => void confirmDeleteVehicle()}>
+              Remove vehicle
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
