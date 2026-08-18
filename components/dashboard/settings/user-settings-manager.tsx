@@ -19,9 +19,9 @@ import {
 } from "@/components/dashboard/settings/user-settings-sections";
 import { authenticatedFetch } from "@/lib/auth/client";
 import {
+  ensureFirebaseAuthConfigured,
   getFirebaseAuthDiagnostics,
   getFirebaseAuth,
-  isFirebaseAuthConfigured,
 } from "@/lib/auth/firebase-client";
 import {
   formFromProfile,
@@ -622,13 +622,13 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
       toast.error("Enter a mobile number before verification");
       return;
     }
-    if (!isFirebaseAuthConfigured()) {
-      toast.error("Firebase phone authentication is not configured");
-      return;
-    }
-
     setIsSendingOtp(true);
     try {
+      if (!(await ensureFirebaseAuthConfigured())) {
+        toast.error("Firebase phone authentication is not configured");
+        return;
+      }
+
       const checkResponse = await authenticatedFetch(
         withBasePath("/api/settings/mobile-otp/check"),
         {
@@ -677,7 +677,7 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
 
     try {
       if (!mobileVerificationId) throw new Error("Send OTP first");
-      if (!isFirebaseAuthConfigured()) {
+      if (!(await ensureFirebaseAuthConfigured())) {
         throw new Error("Firebase phone authentication is not configured");
       }
       const credential = PhoneAuthProvider.credential(

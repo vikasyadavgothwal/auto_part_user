@@ -1,4 +1,4 @@
-import { getApp, getApps, initializeApp } from "firebase/app";
+import { getApp, getApps, initializeApp, type FirebaseOptions } from "firebase/app";
 import {
   getAuth,
   inMemoryPersistence,
@@ -9,7 +9,13 @@ import {
   type Auth,
 } from "firebase/auth";
 
-const firebaseConfig = {
+declare global {
+  interface Window {
+    __AUTO_PARTS_FIREBASE_CONFIG__?: FirebaseOptions;
+  }
+}
+
+const config: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -18,15 +24,38 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const requiredConfig = [
-  firebaseConfig.apiKey,
-  firebaseConfig.authDomain,
-  firebaseConfig.projectId,
-  firebaseConfig.appId,
-];
+const firebaseConfig = () =>
+  typeof window === "undefined"
+    ? config
+    : { ...config, ...window.__AUTO_PARTS_FIREBASE_CONFIG__ };
+
+let runtimeConfigPromise: Promise<void> | null = null;
 
 export function isFirebaseAuthConfigured(): boolean {
-  return requiredConfig.every((value) => Boolean(value?.trim()));
+  const activeConfig = firebaseConfig();
+  return [
+    activeConfig.apiKey,
+    activeConfig.authDomain,
+    activeConfig.projectId,
+    activeConfig.appId,
+  ].every((value) => Boolean(String(value ?? "").trim()));
+}
+
+export async function ensureFirebaseAuthConfigured(): Promise<boolean> {
+  if (isFirebaseAuthConfigured()) return true;
+  if (typeof window === "undefined") return false;
+
+  runtimeConfigPromise ??= new Promise<void>((resolve) => {
+    const script = document.createElement("script");
+    script.src = `/api/firebase-config.js?ts=${Date.now()}`;
+    script.async = false;
+    script.onload = () => resolve();
+    script.onerror = () => resolve();
+    document.head.appendChild(script);
+  });
+
+  await runtimeConfigPromise;
+  return isFirebaseAuthConfigured();
 }
 
 export function getFirebaseAuth(): Auth {
@@ -34,18 +63,18 @@ export function getFirebaseAuth(): Auth {
     throw new Error("Firebase authentication is not configured.");
   }
 
-  const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+  const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig());
   return getAuth(app);
 }
 
 export function getFirebaseAuthDiagnostics() {
+  const activeConfig = firebaseConfig();
+  const apiKey = String(activeConfig.apiKey ?? "");
   return {
     origin: typeof window === "undefined" ? "server" : window.location.origin,
-    authDomain: firebaseConfig.authDomain ?? "",
-    projectId: firebaseConfig.projectId ?? "",
-    apiKeyHint: firebaseConfig.apiKey
-      ? `${firebaseConfig.apiKey.slice(0, 6)}...${firebaseConfig.apiKey.slice(-4)}`
-      : "",
+    authDomain: String(activeConfig.authDomain ?? ""),
+    projectId: String(activeConfig.projectId ?? ""),
+    apiKeyHint: apiKey ? `${apiKey.slice(0, 6)}...${apiKey.slice(-4)}` : "",
   };
 }
 
