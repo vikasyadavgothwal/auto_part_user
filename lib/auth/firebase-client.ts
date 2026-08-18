@@ -9,6 +9,8 @@ import {
   type Auth,
 } from "firebase/auth";
 
+import { withBasePath } from "@/lib/routes";
+
 declare global {
   interface Window {
     __AUTO_PARTS_FIREBASE_CONFIG__?: FirebaseOptions;
@@ -47,7 +49,7 @@ export async function ensureFirebaseAuthConfigured(): Promise<boolean> {
 
   runtimeConfigPromise ??= new Promise<void>((resolve) => {
     const script = document.createElement("script");
-    script.src = `/api/firebase-config.js?ts=${Date.now()}`;
+    script.src = `${withBasePath("/api/firebase-config.js")}?ts=${Date.now()}`;
     script.async = false;
     script.onload = () => resolve();
     script.onerror = () => resolve();
