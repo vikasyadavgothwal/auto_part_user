@@ -207,11 +207,12 @@ export function ContactVerificationSection({
                   onChange={(event) =>
                     setOtp(normalizeDigits(event.target.value, 6))
                   }
-                  placeholder="6 digits"
                   inputMode="numeric"
                   pattern="[0-9]{6}"
                   minLength={6}
                   maxLength={6}
+                  autoComplete="one-time-code"
+                  placeholder="Enter 6-digit OTP"
                   required
                   className="h-9 border-[#2A2A2A] bg-[#0A0A0A]"
                 />

@@ -576,7 +576,6 @@ export function CreateRfqPage({ user }: { user: DashboardUser }) {
       const created = result.rfq?.publicId
         ? `?created=${encodeURIComponent(result.rfq.publicId)}`
         : "?created=1"
-      toast.success("RFQ created successfully")
       router.push(`${appRoutes.rfqs}${created}`)
       router.refresh()
     } catch (caught) {
