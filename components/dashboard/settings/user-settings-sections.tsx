@@ -220,7 +220,7 @@ export function ContactVerificationSection({
                 type="button"
                 variant="outline"
                 onClick={verifyMobileOtp}
-                disabled={isVerifyingOtp || !otp.trim()}
+                disabled={isVerifyingOtp || !/^\d{6}$/.test(otp)}
                 className="gap-2"
               >
                 <CheckCircle2 className="size-4" />
@@ -237,11 +237,13 @@ export function ContactVerificationSection({
 export function ProfileInformationSection({
   form,
   isSaving,
+  phoneChanged,
   saveSettings,
   setField,
 }: {
   form: UserProfileFormValues;
   isSaving: boolean;
+  phoneChanged: boolean;
   saveSettings: (event: FormEvent<HTMLFormElement>) => void;
   setField: <Key extends keyof UserProfileFormValues>(
     key: Key,
@@ -292,9 +294,9 @@ export function ProfileInformationSection({
           </div>
 
           <div className="flex items-end">
-            <Button
-              type="submit"
-              disabled={isSaving}
+              <Button
+                type="submit"
+              disabled={isSaving || phoneChanged}
               className="gap-2 bg-[#DC2626] text-white hover:bg-[#B91C1C]"
             >
               <Save className="size-4" />

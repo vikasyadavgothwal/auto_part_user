@@ -296,6 +296,8 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
     setMobileCountryCode(countryCode);
     setMobileLocalNumber(digits);
     setField("phone", buildMobileNumber(countryCode, digits));
+    setMobileVerificationId("");
+    setOtp("");
   };
 
   const validateForm = () => {
@@ -529,6 +531,13 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
       toast.error(validationError);
       return;
     }
+    if (
+      normalizeMobileValue(form.phone) !==
+      normalizeMobileValue(currentProfile.phone ?? "")
+    ) {
+      toast.error("Verify the mobile number with OTP before saving");
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -749,6 +758,7 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
       <ProfileInformationSection
         form={form}
         isSaving={isSaving}
+        phoneChanged={phoneChanged}
         saveSettings={saveSettings}
         setField={setField}
       />
