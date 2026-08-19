@@ -8,7 +8,6 @@ export type UserAddressRecord = {
   landmark: string | null;
   city: string;
   state: string;
-  postalCode: string;
   country: string;
   isDefault: boolean;
   createdAt: string;
@@ -24,7 +23,6 @@ export type UserAddressFormValues = {
   landmark: string;
   city: string;
   state: string;
-  postalCode: string;
   country: string;
   isDefault: boolean;
 };
@@ -38,7 +36,6 @@ export const emptyAddressForm: UserAddressFormValues = {
   landmark: "",
   city: "",
   state: "",
-  postalCode: "",
   country: "",
   isDefault: true,
 };
@@ -52,7 +49,6 @@ export const payloadFromAddressForm = (form: UserAddressFormValues) => ({
   landmark: form.landmark.trim(),
   city: form.city.trim(),
   state: form.state.trim(),
-  postalCode: form.postalCode.trim(),
   country: form.country.trim(),
   isDefault: form.isDefault,
 });

@@ -424,7 +424,6 @@ export function SavedDeliveryAddressesSection({
                     address.landmark,
                     address.city,
                     address.state,
-                    address.postalCode,
                     address.country,
                   ]
                     .filter(Boolean)
@@ -473,19 +472,6 @@ export function SavedDeliveryAddressesSection({
               maxLength={25}
               required
               onChange={(event) => setAddressField("phone", event.target.value)}
-              className="h-11 border-[#2A2A2A] bg-[#111111]"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="delivery-postal">Postal Code<RequiredMark /></Label>
-            <Input
-              id="delivery-postal"
-              value={addressForm.postalCode}
-              maxLength={20}
-              required
-              onChange={(event) =>
-                setAddressField("postalCode", event.target.value)
-              }
               className="h-11 border-[#2A2A2A] bg-[#111111]"
             />
           </div>
@@ -673,19 +659,6 @@ export function EditAddressDialog({
               className="h-11 border-[#2A2A2A] bg-[#0A0A0A]"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="edit-delivery-postal">Postal Code<RequiredMark /></Label>
-            <Input
-              id="edit-delivery-postal"
-              value={editAddressForm.postalCode}
-              maxLength={20}
-              required
-              onChange={(event) =>
-                setEditAddressField("postalCode", event.target.value)
-              }
-              className="h-11 border-[#2A2A2A] bg-[#0A0A0A]"
-            />
-          </div>
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="edit-delivery-line-1">Address Line 1<RequiredMark /></Label>
             <Input
@@ -837,7 +810,6 @@ export function DeleteAddressDialog({
                 addressPendingDelete.landmark,
                 addressPendingDelete.city,
                 addressPendingDelete.state,
-                addressPendingDelete.postalCode,
                 addressPendingDelete.country,
               ]
                 .filter(Boolean)

@@ -127,7 +127,7 @@ const quoteWindowMessage = (rfq: UserRfq) => {
 }
 
 const addressOptionLabel = (address: UserAddressRecord) =>
-  `${address.label}${address.isDefault ? " (Default)" : ""} - ${address.city}, ${address.postalCode}`
+  `${address.label}${address.isDefault ? " (Default)" : ""} - ${address.city}`
 
 const addressSummary = (address: UserAddressRecord) =>
   [
@@ -138,7 +138,6 @@ const addressSummary = (address: UserAddressRecord) =>
     address.landmark,
     address.city,
     address.state,
-    address.postalCode,
     address.country,
   ]
     .filter(Boolean)

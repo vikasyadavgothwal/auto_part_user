@@ -34,7 +34,6 @@ type UserOrderRecord = {
   deliveryLandmark: string | null;
   deliveryCity: string | null;
   deliveryState: string | null;
-  deliveryPostalCode: string | null;
   deliveryCountry: string | null;
   supplier: {
     companyName: string | null;
@@ -272,7 +271,6 @@ export function mapUserOrders(orders: UserOrderRecord[]): Order[] {
       order.deliveryLandmark,
       order.deliveryCity,
       order.deliveryState,
-      order.deliveryPostalCode,
       order.deliveryCountry,
     ]
       .filter(Boolean)

@@ -57,7 +57,6 @@ type UserSettingsManagerProps = {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MOBILE_PATTERN = /^\+\d{8,15}$/;
-const POSTAL_CODE_PATTERN = /^[A-Za-z0-9 -]*$/;
 const MOBILE_COUNTRY_CODES = [
   { code: "+971", label: "UAE" },
   { code: "+91", label: "India" },
@@ -108,7 +107,6 @@ const formFromAddress = (
   landmark: address.landmark ?? "",
   city: address.city,
   state: address.state,
-  postalCode: address.postalCode,
   country: address.country,
   isDefault: address.isDefault,
 });
@@ -331,9 +329,6 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
     if (form.phone && !MOBILE_PATTERN.test(form.phone)) {
       return "Enter a valid mobile number";
     }
-    if (form.postalCode && !POSTAL_CODE_PATTERN.test(form.postalCode)) {
-      return "Postal code contains invalid characters";
-    }
     return "";
   };
 
@@ -360,9 +355,6 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
     if (!values.state.trim()) return "State is required";
     if (!/[\p{L}\p{N}]/u.test(values.state)) return "State must include a letter or number";
     if (values.state.trim().length > 120) return "State must be 120 characters or fewer";
-    if (!/^[A-Za-z0-9 -]{3,20}$/.test(values.postalCode.trim())) {
-      return "Enter a valid postal code";
-    }
     if (!values.country.trim()) return "Country is required";
     if (!/[\p{L}\p{N}]/u.test(values.country)) return "Country must include a letter or number";
     if (values.country.trim().length > 120) return "Country must be 120 characters or fewer";
@@ -462,7 +454,6 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
               landmark: address.landmark ?? "",
               city: address.city,
               state: address.state,
-              postalCode: address.postalCode,
               country: address.country,
               isDefault: true,
             }),

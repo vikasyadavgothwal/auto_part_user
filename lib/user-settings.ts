@@ -12,7 +12,6 @@ export type UserProfileRecord = {
   addressLine2: string | null;
   city: string | null;
   state: string | null;
-  postalCode: string | null;
   country: string | null;
   createdAt: string;
   updatedAt: string;
@@ -28,7 +27,6 @@ export type UserProfileFormValues = {
   addressLine2: string;
   city: string;
   state: string;
-  postalCode: string;
   country: string;
 };
 
@@ -46,7 +44,6 @@ export const emptyUserProfile: UserProfileRecord = {
   addressLine2: null,
   city: null,
   state: null,
-  postalCode: null,
   country: null,
   createdAt: "",
   updatedAt: "",
@@ -64,7 +61,6 @@ export const formFromProfile = (
   addressLine2: profile.addressLine2 ?? "",
   city: profile.city ?? "",
   state: profile.state ?? "",
-  postalCode: profile.postalCode ?? "",
   country: profile.country ?? "",
 });
 
@@ -78,6 +74,5 @@ export const payloadFromForm = (form: UserProfileFormValues) => ({
   addressLine2: form.addressLine2.trim(),
   city: form.city.trim(),
   state: form.state.trim(),
-  postalCode: form.postalCode.trim(),
   country: form.country.trim(),
 });
