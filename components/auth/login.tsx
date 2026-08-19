@@ -1,4 +1,5 @@
 "use client"
+/* eslint-disable @next/next/no-img-element */
 
 import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
@@ -36,7 +37,7 @@ function getLoginError(error: unknown): string {
   return error instanceof Error ? error.message : "Unable to sign in."
 }
 
-export function LoginForm() {
+export function LoginForm({ branding = { siteName: "AutoPartsPro", logoUrl: "" } }: { branding?: { siteName: string; logoUrl: string } }) {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -93,6 +94,9 @@ export function LoginForm() {
       <div className="w-full max-w-md">
         <Card className="border border-border bg-brand-elevated text-foreground shadow-2xl shadow-black/20 ring-0">
           <CardHeader className="space-y-2">
+            <div className="mb-3 flex justify-center">
+              {branding.logoUrl ? <img src={branding.logoUrl} alt={branding.siteName} className="h-12 max-w-[220px] object-contain" /> : <span className="text-2xl font-bold">{branding.siteName === "AutoPartsPro" || branding.siteName === "AutoParts Pro" ? <>AutoParts<span className="text-primary"> Pro</span></> : branding.siteName}</span>}
+            </div>
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-brand-panel px-3 py-1 text-xs text-brand-muted">
               <ShieldCheck className="size-3.5" />
               Secure user access
