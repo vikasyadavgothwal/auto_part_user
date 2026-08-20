@@ -105,6 +105,7 @@ export function RfqAddressSection({
               value={projectName}
               maxLength={120}
               required
+              placeholder="Parts request"
               aria-invalid={Boolean(fieldErrors.projectName)}
               onChange={(event) => {
                 clearError("projectName")
@@ -122,6 +123,7 @@ export function RfqAddressSection({
                 type="date"
                 value={deadline}
                 required
+                placeholder="Select response deadline"
                 aria-invalid={Boolean(fieldErrors.deadline)}
                 onChange={(event) => {
                   clearError("deadline")
@@ -139,6 +141,7 @@ export function RfqAddressSection({
               value={vehicle.year}
               maxLength={4}
               required
+              placeholder="2019"
               aria-invalid={Boolean(fieldErrors["vehicle.year"])}
               onChange={(event) =>
                 updateVehicle("year", digitsOnly(event.target.value).slice(0, 4))
@@ -153,6 +156,7 @@ export function RfqAddressSection({
               value={vehicle.make}
               maxLength={80}
               required
+              placeholder="Toyota"
               aria-invalid={Boolean(fieldErrors["vehicle.make"])}
               onChange={(event) => updateVehicle("make", event.target.value)}
               className="h-10 border-border bg-brand-surface"
@@ -165,6 +169,7 @@ export function RfqAddressSection({
               value={vehicle.model}
               maxLength={80}
               required
+              placeholder="Camry"
               aria-invalid={Boolean(fieldErrors["vehicle.model"])}
               onChange={(event) => updateVehicle("model", event.target.value)}
               className="h-10 border-border bg-brand-surface"
@@ -176,6 +181,7 @@ export function RfqAddressSection({
             <Input
               value={vehicle.trim}
               maxLength={80}
+              placeholder="LE"
               aria-invalid={Boolean(fieldErrors["vehicle.trim"])}
               onChange={(event) => updateVehicle("trim", event.target.value)}
               className="h-10 border-border bg-brand-surface"
@@ -187,11 +193,12 @@ export function RfqAddressSection({
             <Input
               value={vehicle.vin}
               maxLength={17}
+              placeholder="JT2BF22K6X0123456"
               aria-invalid={Boolean(fieldErrors["vehicle.vin"])}
               onChange={(event) =>
                 updateVehicle(
                   "vin",
-                  event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 17),
+                  event.target.value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, "").slice(0, 17),
                 )
               }
               className="h-10 border-border bg-brand-surface uppercase"
@@ -204,6 +211,7 @@ export function RfqAddressSection({
               value={companyName}
               maxLength={120}
               required
+              placeholder="Customer or company name"
               aria-invalid={Boolean(fieldErrors.companyName)}
               onChange={(event) => {
                 clearError("companyName")
@@ -219,6 +227,7 @@ export function RfqAddressSection({
               value={contactName}
               maxLength={120}
               required
+              placeholder="Alex Morgan"
               aria-invalid={Boolean(fieldErrors.contactName)}
               onChange={(event) => {
                 clearError("contactName")
@@ -235,6 +244,7 @@ export function RfqAddressSection({
               value={email}
               maxLength={254}
               required
+              placeholder="customer@example.com"
               aria-invalid={Boolean(fieldErrors.email)}
               onChange={(event) => {
                 clearError("email")
@@ -251,10 +261,11 @@ export function RfqAddressSection({
               maxLength={20}
               type="tel"
               required
+              placeholder="+971501234567"
               aria-invalid={Boolean(fieldErrors.phone)}
               onChange={(event) => {
                 clearError("phone")
-                setPhone(event.target.value)
+                setPhone(event.target.value.replace(/[^\d+\s()-]/g, ""))
               }}
               className="h-10 border-border bg-brand-surface"
             />

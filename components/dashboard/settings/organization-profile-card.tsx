@@ -33,6 +33,7 @@ export function OrganizationProfileCard({
               id={setting.id}
               type={setting.type}
               defaultValue={setting.defaultValue}
+              placeholder={setting.defaultValue}
               minLength={setting.minLength}
               maxLength={setting.maxLength}
               required

@@ -323,7 +323,8 @@ export function UserSettingsManager({ profile }: UserSettingsManagerProps) {
     ) {
       return "Name fields must be 100 characters or fewer";
     }
-    if (form.email.length > 254 || (form.email && !EMAIL_PATTERN.test(form.email))) {
+    if (!form.email.trim()) return "Email is required";
+    if (form.email.length > 254 || !EMAIL_PATTERN.test(form.email.trim())) {
       return "Enter a valid email address";
     }
     if (form.phone && !MOBILE_PATTERN.test(form.phone)) {

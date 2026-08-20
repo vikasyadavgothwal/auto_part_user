@@ -32,7 +32,7 @@ type VehicleFormErrors = Partial<Record<keyof VehicleFormValues, string>>
 
 const currentVehicleYear = new Date().getFullYear() + 1
 const minMileage = 1
-const maxMileage = 70
+const maxMileage = 9_999_999
 const vehicleStatusSet = new Set<VehicleStatus>(vehicleStatusOptions)
 const digitsOnly = (value: string) => value.replace(/\D/g, "")
 const vinInput = (value: string) =>

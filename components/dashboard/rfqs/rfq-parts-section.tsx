@@ -117,6 +117,7 @@ export function RfqPartsSection({
                   value={part.quantity}
                   maxLength={3}
                   required
+                  placeholder="1"
                   aria-invalid={Boolean(fieldErrors[partErrorKey(part.id, "quantity")])}
                   onChange={(event) =>
                     updatePart(

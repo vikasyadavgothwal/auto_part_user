@@ -103,7 +103,7 @@ export function ContactVerificationSection({
       <CardContent className="grid gap-6 md:grid-cols-2">
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-3">
-            <Label htmlFor="user-email">Email</Label>
+            <Label htmlFor="user-email">Email<RequiredMark /></Label>
             {emailVerified ? (
               <Badge className="bg-green-500/10 text-green-400">
                 Verified
@@ -122,6 +122,8 @@ export function ContactVerificationSection({
             type="email"
             value={form.email}
             maxLength={254}
+            required
+            placeholder="customer@example.com"
             onChange={(event) => setField("email", event.target.value)}
             className="h-11 border-[#2A2A2A] bg-[#0A0A0A]"
           />
@@ -183,7 +185,7 @@ export function ContactVerificationSection({
               inputMode="numeric"
               maxLength={14}
               autoComplete="tel-national"
-              placeholder="Mobile number"
+              placeholder="501234567"
               className="h-11 min-w-0 rounded-l-none border-l-0 border-[#2A2A2A] bg-[#0A0A0A]"
             />
           </div>
@@ -265,6 +267,7 @@ export function ProfileInformationSection({
               id="company-name"
               value={form.companyName}
               maxLength={160}
+              placeholder="Company or workshop name"
               onChange={(event) => setField("companyName", event.target.value)}
               className="h-11 border-[#2A2A2A] bg-[#0A0A0A]"
             />
@@ -278,6 +281,7 @@ export function ProfileInformationSection({
               minLength={2}
               maxLength={100}
               required
+              placeholder="First name"
               onChange={(event) => setField("firstName", event.target.value)}
               className="h-11 border-[#2A2A2A] bg-[#0A0A0A]"
             />
@@ -289,6 +293,7 @@ export function ProfileInformationSection({
               id="last-name"
               value={form.lastName}
               maxLength={100}
+              placeholder="Last name"
               onChange={(event) => setField("lastName", event.target.value)}
               className="h-11 border-[#2A2A2A] bg-[#0A0A0A]"
             />
@@ -446,6 +451,7 @@ export function SavedDeliveryAddressesSection({
               value={addressForm.label}
               maxLength={60}
               required
+              placeholder="Home"
               onChange={(event) => setAddressField("label", event.target.value)}
               className="h-11 border-[#2A2A2A] bg-[#111111]"
             />
@@ -457,6 +463,7 @@ export function SavedDeliveryAddressesSection({
               value={addressForm.recipientName}
               maxLength={120}
               required
+              placeholder="Alex Morgan"
               onChange={(event) =>
                 setAddressField("recipientName", event.target.value)
               }
@@ -471,7 +478,13 @@ export function SavedDeliveryAddressesSection({
               type="tel"
               maxLength={25}
               required
-              onChange={(event) => setAddressField("phone", event.target.value)}
+              placeholder="+971501234567"
+              onChange={(event) =>
+                setAddressField(
+                  "phone",
+                  event.target.value.replace(/[^\d+\s()-]/g, ""),
+                )
+              }
               className="h-11 border-[#2A2A2A] bg-[#111111]"
             />
           </div>
@@ -482,6 +495,7 @@ export function SavedDeliveryAddressesSection({
               value={addressForm.addressLine1}
               maxLength={255}
               required
+              placeholder="Building, street, apartment"
               onChange={(event) =>
                 setAddressField("addressLine1", event.target.value)
               }
@@ -494,6 +508,7 @@ export function SavedDeliveryAddressesSection({
               id="delivery-line-2"
               value={addressForm.addressLine2}
               maxLength={255}
+              placeholder="Suite or floor"
               onChange={(event) =>
                 setAddressField("addressLine2", event.target.value)
               }
@@ -506,6 +521,7 @@ export function SavedDeliveryAddressesSection({
               id="delivery-landmark"
               value={addressForm.landmark}
               maxLength={160}
+              placeholder="Near mall or service road"
               onChange={(event) =>
                 setAddressField("landmark", event.target.value)
               }
@@ -519,6 +535,7 @@ export function SavedDeliveryAddressesSection({
               value={addressForm.city}
               maxLength={120}
               required
+              placeholder="Dubai"
               onChange={(event) => setAddressField("city", event.target.value)}
               className="h-11 border-[#2A2A2A] bg-[#111111]"
             />
@@ -530,6 +547,7 @@ export function SavedDeliveryAddressesSection({
               value={addressForm.state}
               maxLength={120}
               required
+              placeholder="Dubai"
               onChange={(event) => setAddressField("state", event.target.value)}
               className="h-11 border-[#2A2A2A] bg-[#111111]"
             />
@@ -541,6 +559,7 @@ export function SavedDeliveryAddressesSection({
               value={addressForm.country}
               maxLength={120}
               required
+              placeholder="United Arab Emirates"
               onChange={(event) =>
                 setAddressField("country", event.target.value)
               }
@@ -626,6 +645,7 @@ export function EditAddressDialog({
               value={editAddressForm.label}
               maxLength={60}
               required
+              placeholder="Home"
               onChange={(event) =>
                 setEditAddressField("label", event.target.value)
               }
@@ -639,6 +659,7 @@ export function EditAddressDialog({
               value={editAddressForm.recipientName}
               maxLength={120}
               required
+              placeholder="Alex Morgan"
               onChange={(event) =>
                 setEditAddressField("recipientName", event.target.value)
               }
@@ -653,8 +674,12 @@ export function EditAddressDialog({
               type="tel"
               maxLength={25}
               required
+              placeholder="+971501234567"
               onChange={(event) =>
-                setEditAddressField("phone", event.target.value)
+                setEditAddressField(
+                  "phone",
+                  event.target.value.replace(/[^\d+\s()-]/g, ""),
+                )
               }
               className="h-11 border-[#2A2A2A] bg-[#0A0A0A]"
             />
@@ -666,6 +691,7 @@ export function EditAddressDialog({
               value={editAddressForm.addressLine1}
               maxLength={255}
               required
+              placeholder="Building, street, apartment"
               onChange={(event) =>
                 setEditAddressField("addressLine1", event.target.value)
               }
@@ -678,6 +704,7 @@ export function EditAddressDialog({
               id="edit-delivery-line-2"
               value={editAddressForm.addressLine2}
               maxLength={255}
+              placeholder="Suite or floor"
               onChange={(event) =>
                 setEditAddressField("addressLine2", event.target.value)
               }
@@ -690,6 +717,7 @@ export function EditAddressDialog({
               id="edit-delivery-landmark"
               value={editAddressForm.landmark}
               maxLength={160}
+              placeholder="Near mall or service road"
               onChange={(event) =>
                 setEditAddressField("landmark", event.target.value)
               }
@@ -703,6 +731,7 @@ export function EditAddressDialog({
               value={editAddressForm.city}
               maxLength={120}
               required
+              placeholder="Dubai"
               onChange={(event) =>
                 setEditAddressField("city", event.target.value)
               }
@@ -716,6 +745,7 @@ export function EditAddressDialog({
               value={editAddressForm.state}
               maxLength={120}
               required
+              placeholder="Dubai"
               onChange={(event) =>
                 setEditAddressField("state", event.target.value)
               }
@@ -729,6 +759,7 @@ export function EditAddressDialog({
               value={editAddressForm.country}
               maxLength={120}
               required
+              placeholder="United Arab Emirates"
               onChange={(event) =>
                 setEditAddressField("country", event.target.value)
               }

@@ -72,10 +72,10 @@ export function ChangePasswordCard() {
       <CardHeader><CardTitle>Change Password</CardTitle></CardHeader>
       <CardContent className="grid gap-6 md:grid-cols-3">
         {([
-          ["currentPassword", "Current Password", "current-password"],
-          ["newPassword", "New Password", "new-password"],
-          ["confirmPassword", "Confirm Password", "new-password"],
-        ] as const).map(([key, label, autocomplete]) => (
+          ["currentPassword", "Current Password", "current-password", "Current password"],
+          ["newPassword", "New Password", "new-password", "New password"],
+          ["confirmPassword", "Confirm Password", "new-password", "Confirm new password"],
+        ] as const).map(([key, label, autocomplete, placeholder]) => (
           <div key={key} className="space-y-2">
             <Label htmlFor={`user-${key}`}>{label}<RequiredMark /></Label>
             <Input
@@ -83,6 +83,7 @@ export function ChangePasswordCard() {
               type="password"
               autoComplete={autocomplete}
               value={form[key]}
+              placeholder={placeholder}
               onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))}
               maxLength={128}
               required
