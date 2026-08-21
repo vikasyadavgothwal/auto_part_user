@@ -25,6 +25,7 @@ export const appRoutes = {
   createRfq: "/rfqs/create",
   orders: "/orders",
   bookings: "/bookings",
+  payments: "/payments",
   parts: "/parts",
   suppliers: "/suppliers",
   settings: "/settings",

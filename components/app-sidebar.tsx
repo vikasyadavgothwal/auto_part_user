@@ -8,6 +8,7 @@ import {
   FileText,
   ShoppingCart,
   ShoppingBag,
+  CreditCard,
   Settings,
   Package,
 } from "lucide-react"
@@ -29,6 +30,7 @@ const items = [
   { title: "RFQs", url: appRoutes.rfqs, icon: FileText },
   { title: "Orders", url: appRoutes.orders, icon: ShoppingCart },
   { title: "Bookings", url: appRoutes.bookings, icon: ShoppingBag },
+  { title: "Payments", url: appRoutes.payments, icon: CreditCard },
   { title: "Saved Parts", url: appRoutes.parts, icon: Package },
 ]
 
